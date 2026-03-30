@@ -36,6 +36,10 @@ Route::middleware('auth')->group(function () {
         return view('home');
     })->name('home');
 
+    Route::get('/registros', function () {
+        return view('registros');
+    })->name('registros');
+
     Route::get('/gestion-filtros', function () {
         return view('gestion_filtros');
     })->name('filtros.index');
