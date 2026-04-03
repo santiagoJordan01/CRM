@@ -41,9 +41,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/registros', [clienteController::class, 'create'])->name('registros');
     Route::post('/registros', [clienteController::class, 'store'])->name('registros.store');
 
-    Route::get('/gestion-filtros', function () {
-        return view('gestion_filtros');
-    })->name('filtros.index');
+    Route::get('/gestion-filtros', [clienteController::class, 'filtrosIndex'])->name('filtros.index');
+    Route::get('/gestion-filtros/{id}', [clienteController::class, 'filtrosShow'])->name('filtros.show');
 
     Route::get('/gestion-radicados', function () {
         return view('gestion_radicados');

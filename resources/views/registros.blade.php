@@ -8,14 +8,19 @@
 <section class="card registros-card">
     <h1>Registros</h1>
     <p class="registros-subtitle">Completa la informacion del cliente para registrar la solicitud.</p>
-
-    <form class="registros-form" action="{{ route('registros.store') }}" method="POST">
+     @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+    <form class="registros-form" action="{{ route('registros.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="registros-grid">
             <div class="registros-col">
                 <div class="form-item">
                     <label for="campania">Campana:</label>
-                    <select id="campania" name="campania" class="crm-select" data-placeholder="Seleccione banco">
+                    <select id="campania" name="campania" class="crm-select" data-placeholder="Seleccione banco" required>
                         <option></option>
                         <option>Banco AV Villas</option>
                         <option>Banco BBVA</option>
@@ -26,19 +31,19 @@
 
                 <div class="form-item">
                     <label for="producto">Producto:</label>
-                    <select id="producto" name="producto" class="crm-select" data-placeholder="Seleccione producto">
+                    <select id="producto" name="producto" class="crm-select" data-placeholder="Seleccione producto" required>
                         <option></option>
                     </select>
                 </div>
 
                 <div class="form-item">
                     <label for="cedula">Cedula:</label>
-                    <input id="cedula" name="cedula" type="text" placeholder="Numero de documento" />
+                    <input id="cedula" name="cedula" type="text" placeholder="Numero de documento" required />
                 </div>
 
                 <div class="form-item">
                     <label for="genero">Genero:</label>
-                    <select id="genero" name="genero" class="crm-select" data-placeholder="- Seleccione -">
+                    <select id="genero" name="genero" class="crm-select" data-placeholder="- Seleccione -" required>
                         <option></option>
                         <option>Femenino</option>
                         <option>Masculino</option>
@@ -49,12 +54,12 @@
 
                 <div class="form-item">
                     <label for="email">Correo electrónico:</label>
-                    <input id="email" name="email" type="email" placeholder="-Correo electrónico-" />
+                    <input id="email" name="email" type="email" placeholder="-Correo electrónico-" required />
                 </div>
 
                 <div class="form-item">
                     <label for="departamento">Departamento Residencia Cliente:</label>
-                    <select id="departamento" name="departamento_id" class="crm-select" data-placeholder="- Seleccione -">
+                    <select id="departamento" name="departamento_id" class="crm-select" data-placeholder="- Seleccione -" required>
                         <option value="">- Seleccione -</option>
                         @foreach($departamentos as $departamento)
                         <option value="{{ $departamento->id }}">{{ $departamento->nombre }}</option>
@@ -64,7 +69,7 @@
 
                 <div class="form-item">
                     <label for="perfil">Perfil:</label>
-                    <select id="perfil" name="perfil" class="crm-select" data-placeholder="- Seleccione -">
+                    <select id="perfil" name="perfil" class="crm-select" data-placeholder="- Seleccione -" required>
                         <option></option>
                         <option>Empleado</option>
                         <option>Pensionado</option>
@@ -78,17 +83,17 @@
 
                 <div class="form-item">
                     <label for="empresa">Empresa:</label>
-                    <input id="empresa" name="empresa" type="text" placeholder="Empresa actual" />
+                    <input id="empresa" name="empresa" type="text" placeholder="Empresa actual" required />
                 </div>
 
                 <div class="form-item">
                     <label for="fecha_vinculacion">Fecha de Vinculacion:</label>
-                    <input id="fecha_vinculacion" name="fecha_vinculacion" type="date" />
+                    <input id="fecha_vinculacion" name="fecha_vinculacion" type="date" required />
                 </div>
 
                 <div class="form-item">
                     <label for="canal">Canal:</label>
-                    <select id="canal" name="canal" class="crm-select" data-placeholder="- Seleccione -">
+                    <select id="canal" name="canal" class="crm-select" data-placeholder="- Seleccione -" required>
                         <option></option>
                         <option>Tradicional</option>
                         <option>Digital</option>
@@ -97,17 +102,17 @@
 
                 <div class="form-item">
                     <label for="plazo">Plazo:</label>
-                    <input id="plazo" name="plazo" type="number" min="0" placeholder="Meses" />
+                    <input id="plazo" name="plazo" type="number" min="0" placeholder="Meses" required />
                 </div>
 
                 <div class="form-item">
                     <label for="ingreso_principal">Ingreso principal:</label>
-                    <input id="ingreso_principal" name="ingreso_principal" type="text" placeholder="$ 0" inputmode="numeric" autocomplete="off" />
+                    <input id="ingreso_principal" name="ingreso_principal" type="text" placeholder="$ 0" inputmode="numeric" autocomplete="off" required />
                 </div>
 
                 <div class="form-item">
                     <label for="tipo_cliente">Tipo de cliente:</label>
-                    <select id="tipo_cliente" name="tipo_cliente" class="crm-select" data-placeholder="- Seleccione -">
+                    <select id="tipo_cliente" name="tipo_cliente" class="crm-select" data-placeholder="- Seleccione -" required>
                         <option></option>
                         <option>Propio</option>
                         <option>Referido Well</option>
@@ -121,7 +126,7 @@
             <div class="registros-col">
                 <div class="form-item">
                     <label for="destino">Destino:</label>
-                    <select id="destino" name="destino" class="crm-select" data-placeholder="Seleccione destino">
+                    <select id="destino" name="destino" class="crm-select" data-placeholder="Seleccione destino" required>
                         <option></option>
                         <option>Compra de Cartera</option>
                         <option>Libre Inversión</option>
@@ -131,24 +136,24 @@
 
                 <div class="form-item">
                     <label for="nombre_cliente">Nombre(s) Apellido(s) Completo Cliente:</label>
-                    <input id="nombre_cliente" name="nombre_cliente" type="text" placeholder="Nombre completo" />
+                    <input id="nombre_cliente" name="nombre_cliente" type="text" placeholder="Nombre completo" required />
                 </div>
 
                 <div class="form-item">
                     <label for="fecha_nacimiento">Fecha de nacimiento:</label>
-                    <input id="fecha_nacimiento" name="fecha_nacimiento" type="date" />
+                    <input id="fecha_nacimiento" name="fecha_nacimiento" type="date" required />
                 </div>
 
                 <div class="form-item">
                     <label for="ciudad">Ciudad Res Cliente:</label>
-                    <select id="ciudad" name="ciudad" class="crm-select" data-placeholder="- Seleccione -">
+                    <select id="ciudad" name="ciudad" class="crm-select" data-placeholder="- Seleccione -" required>
                         <option></option>
                     </select>
                 </div>
 
                 <div class="form-item">
                     <label for="sector">Sector:</label>
-                    <select id="sector" name="sector" class="crm-select" data-placeholder="- Seleccione -">
+                    <select id="sector" name="sector" class="crm-select" data-placeholder="- Seleccione -" required>
                         <option></option>
                         <option>Fuerzas Armadas</option>
                         <option>Pensionado</option>
@@ -161,12 +166,12 @@
 
                 <div class="form-item">
                     <label for="nit_empresa">Nit de empresa:</label>
-                    <input id="nit_empresa" name="nit_empresa" type="text" placeholder="Numero sin puntos ni guion" />
+                    <input id="nit_empresa" name="nit_empresa" type="text" placeholder="Numero sin puntos ni guion" required />
                 </div>
 
                 <div class="form-item">
                     <label for="tipo_contrato">Tipo de contrato:</label>
-                    <select id="tipo_contrato" name="tipo_contrato" class="crm-select" data-placeholder="- Seleccione -">
+                    <select id="tipo_contrato" name="tipo_contrato" class="crm-select" data-placeholder="- Seleccione -" required>
                         <option></option>
                         <option>Termino Indefinido</option>
                         <option>Termino Fijo</option>
@@ -190,34 +195,93 @@
 
                 <div class="form-item">
                     <label for="monto_filtrado">Monto filtrado:</label>
-                    <input id="monto_filtrado" name="monto_filtrado" type="text" placeholder="$ 0" inputmode="numeric" autocomplete="off" />
+                    <input id="monto_filtrado" name="monto_filtrado" type="text" placeholder="$ 0" inputmode="numeric" autocomplete="off" required />
                 </div>
 
                 <div class="form-item">
                     <label for="celular_cliente">Celular Cliente:</label>
-                    <input id="celular_cliente" name="celular_cliente" type="text" placeholder="10 digitos" />
+                    <input id="celular_cliente" name="celular_cliente" type="text" placeholder="10 digitos" required />
                 </div>
 
                 <div class="form-item">
                     <label for="otros_ingresos">Otros ingresos:</label>
-                    <input id="otros_ingresos" name="otros_ingresos" type="text" placeholder="$ 0" />
+                    <input id="otros_ingresos" name="otros_ingresos" type="text" placeholder="$ 0" required />
                 </div>
 
 
                 <div class="form-item">
                     <label for="observaciones">Observaciones:</label>
-                    <textarea id="observaciones" name="observaciones" rows="4" class="crm-textarea" placeholder="Escriba aquí sus observaciones..."></textarea>
+                    <textarea id="observaciones" name="observaciones" rows="4" class="crm-textarea" placeholder="Escriba aquí sus observaciones..." required></textarea>
                 </div>
 
 
             </div>
         </div>
 
+
+
+
+        <div class="attach-section">
+            <h1 class="attach-title">
+                <i class="fas fa-paperclip"></i> Adjuntar Archivos
+            </h1>
+            <p class="attach-subtitle">Adjunte soportes opcionales (máximo 3 archivos). Formatos permitidos: PDF, DOC, DOCX, JPG, JPEG, PNG, MP3, WAV, OGG, M4A, MP4, MOV, AVI, MKV, WEBM.</p>
+
+            <div class="attach-grid">
+                <!-- Soporte 1 -->
+                <div class="attach-card">
+                    <div class="attach-card-header">
+                        <i class="fas fa-file-upload"></i>
+                        <span>Soporte 1</span>
+                    </div>
+                    <div class="form-item attach-file">
+                        <input type="file" name="soporte_1" id="soporte_1" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                        <label for="soporte_1" class="attach-label">
+                            <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo
+                        </label>
+                        <span class="file-name" id="file-name-1">Ningún archivo seleccionado</span>
+                    </div>
+                </div>
+
+                <!-- Soporte 2 -->
+                <div class="attach-card">
+                    <div class="attach-card-header">
+                        <i class="fas fa-file-upload"></i>
+                        <span>Soporte 2</span>
+                    </div>
+                    <div class="form-item attach-file">
+                        <input type="file" name="soporte_2" id="soporte_2" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                        <label for="soporte_2" class="attach-label">
+                            <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo
+                        </label>
+                        <span class="file-name" id="file-name-2">Ningún archivo seleccionado</span>
+                    </div>
+                </div>
+
+                <!-- Soporte 3 -->
+                <div class="attach-card">
+                    <div class="attach-card-header">
+                        <i class="fas fa-file-upload"></i>
+                        <span>Soporte 3</span>
+                    </div>
+                    <div class="form-item attach-file">
+                        <input type="file" name="soporte_3" id="soporte_3" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                        <label for="soporte_3" class="attach-label">
+                            <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo
+                        </label>
+                        <span class="file-name" id="file-name-3">Ningún archivo seleccionado</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
         <div class="form-actions">
-            <a href="{{ route('home') }}" class="btn btn-secondary">Volver</a>
-            <button type="submit" class="btn btn-primary">Guardar registro</button>
+            <button type="submit" class="btn btn-primary">Nuevo Filtro</button>
         </div>
     </form>
+    
+
 </section>
 
 <style>
@@ -304,8 +368,10 @@
     .form-actions {
         margin-top: 1rem;
         display: flex;
-        justify-content: flex-end;
+        justify-content: flex-start;
         gap: 0.65rem;
+        border-top: 1px solid #cccccc;
+        padding-top: 10px;
     }
 
     .btn {
@@ -357,6 +423,107 @@
         outline: none;
         border-color: #8aa2bf;
         box-shadow: 0 0 0 2px rgba(109, 139, 175, 0.14);
+    }
+
+    .attach-section {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .attach-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .attach-title i {
+        color: #0f67b7;
+        margin-right: 0.5rem;
+    }
+
+    .attach-subtitle {
+        color: #5f6b7a;
+        font-size: 0.85rem;
+        margin-bottom: 1.5rem;
+        border-left: 3px solid #0f67b7;
+        padding-left: 0.75rem;
+    }
+
+    .attach-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .attach-card {
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #e2edf2;
+        padding: 1rem;
+        transition: box-shadow 0.2s ease;
+    }
+
+    .attach-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .attach-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        color: #0f67b7;
+        margin-bottom: 0.75rem;
+        border-bottom: 1px dashed #e2edf2;
+        padding-bottom: 0.5rem;
+    }
+
+    .attach-card-header i {
+        font-size: 1.2rem;
+    }
+
+    .attach-file {
+        position: relative;
+    }
+
+    .attach-file input[type="file"] {
+        position: absolute;
+        width: 0.1px;
+        height: 0.1px;
+        opacity: 0;
+        overflow: hidden;
+        z-index: -1;
+    }
+
+    .attach-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #eef2ff;
+        color: #0f67b7;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+        border: 1px solid #cbd5e1;
+    }
+
+    .attach-label:hover {
+        background: #e0e7ff;
+    }
+
+    .file-name {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: #5f6b7a;
+        word-break: break-all;
     }
 
     @media (max-width: 1024px) {
@@ -487,6 +654,22 @@
         aplicarMascaraMoneda('#monto_filtrado');
         aplicarMascaraMoneda('#otros_ingresos');
 
+    });
+
+    // Mostrar nombre del archivo seleccionado
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+        input.addEventListener('change', function(e) {
+            const fileId = this.id;
+            const spanId = fileId.replace('soporte_', 'file-name-');
+            const fileNameSpan = document.getElementById(spanId);
+            if (fileNameSpan) {
+                if (this.files.length > 0) {
+                    fileNameSpan.textContent = this.files[0].name;
+                } else {
+                    fileNameSpan.textContent = 'Ningún archivo seleccionado';
+                }
+            }
+        });
     });
 </script>
 @endsection

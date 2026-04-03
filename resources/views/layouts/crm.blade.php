@@ -31,15 +31,18 @@
             font-family: 'Outfit', sans-serif;
             background: radial-gradient(circle at 10% 10%, #f7fbff 0%, var(--bg) 55%);
             color: var(--text);
-            display: flex;
         }
 
         .sidebar {
             width: 285px;
-            min-height: 100vh;
+            height: 100vh;
             background: var(--sidebar);
             border-right: 1px solid var(--line);
             box-shadow: 6px 0 24px rgba(30, 45, 72, 0.06);
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -116,7 +119,8 @@
         }
 
         .main-content {
-            flex: 1;
+            margin-left: 285px;
+            min-height: 100vh;
             padding: 34px;
         }
 
@@ -143,13 +147,12 @@
         }
 
         @media (max-width: 980px) {
-            body {
-                flex-direction: column;
-            }
-
             .sidebar {
                 width: 100%;
+                height: auto;
                 min-height: auto;
+                position: static;
+                overflow: visible;
             }
 
             .sidebar-bottom {
@@ -157,6 +160,7 @@
             }
 
             .main-content {
+                margin-left: 0;
                 padding: 18px;
             }
 
@@ -199,12 +203,6 @@
                     <i class="fas fa-hand-holding-usd"></i> Gestion desembolso
                 </a>
             </nav>
-        </div>
-
-
-
-
-
         </div>
 
         <div class="sidebar-bottom">
