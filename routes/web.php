@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\clienteController;
+use App\Models\Departamento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -27,7 +29,7 @@ Route::middleware('guest')->group(function () {
 
         return back()
             ->withErrors(['email' => 'Credenciales incorrectas.'])
-            ->onlyInput('email');
+            ->onlyInfput('email');
     })->name('login.store');
 });
 
@@ -36,9 +38,8 @@ Route::middleware('auth')->group(function () {
         return view('home');
     })->name('home');
 
-    Route::get('/registros', function () {
-        return view('registros');
-    })->name('registros');
+    Route::get('/registros', [clienteController::class, 'create'])->name('registros');
+    Route::post('/registros', [clienteController::class, 'store'])->name('registros.store');
 
     Route::get('/gestion-filtros', function () {
         return view('gestion_filtros');
@@ -62,5 +63,9 @@ Route::middleware('auth')->group(function () {
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
-    })->name('logout');
+    })->name('logout'); 
 });
+
+
+// routes/web.php
+Route::get('/municipios/{departamentoId}', [clienteController::class, 'getMunicipios'])->name('municipios.get');

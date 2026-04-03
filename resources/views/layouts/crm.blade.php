@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
             --bg: #f3f6fb;
@@ -178,13 +179,32 @@
                 <small>Panel principal</small>
             </div>
 
+    
+
+
             <nav class="nav-links">
-                <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">Inicio</a>
-                <a href="{{ route('filtros.index') }}" class="nav-link {{ request()->routeIs('filtros.*') ? 'active' : '' }}">Gestion filtros</a>
-                <a href="{{ route('radicados.index') }}" class="nav-link {{ request()->routeIs('radicados.*') ? 'active' : '' }}">Gestion radicados</a>
-                <a href="{{ route('aprobados.index') }}" class="nav-link {{ request()->routeIs('aprobados.*') ? 'active' : '' }}">Gestion aprobados</a>
-                <a href="{{ route('desembolso.index') }}" class="nav-link {{ request()->routeIs('desembolso.*') ? 'active' : '' }}">Gestion desembolso</a>
+                <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+                <a href="{{ route('filtros.index') }}" class="nav-link {{ request()->routeIs('filtros.*') ? 'active' : '' }}">
+                    <i class="fas fa-filter"></i> Gestion filtros
+                </a>
+                <a href="{{ route('radicados.index') }}" class="nav-link {{ request()->routeIs('radicados.*') ? 'active' : '' }}">
+                    <i class="fas fa-file-alt"></i> Gestion radicados
+                </a>
+                <a href="{{ route('aprobados.index') }}" class="nav-link {{ request()->routeIs('aprobados.*') ? 'active' : '' }}">
+                    <i class="fas fa-check-circle"></i> Gestion aprobados
+                </a>
+                <a href="{{ route('desembolso.index') }}" class="nav-link {{ request()->routeIs('desembolso.*') ? 'active' : '' }}">
+                    <i class="fas fa-hand-holding-usd"></i> Gestion desembolso
+                </a>
             </nav>
+        </div>
+
+
+
+
+
         </div>
 
         <div class="sidebar-bottom">
