@@ -2,72 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\InteractsWithClienteSupports;
 use App\Models\Cliente;
 use App\Models\Departamento;
 use App\Models\Municipio;
 use Illuminate\Http\Request;
 
-class clienteController extends Controller
+class RegistroClienteController extends Controller
 {
-    private function mapRegistro(Cliente $cliente): array
-    {
-        $departamentoNombre = $cliente->departamento?->nombre
-            ?? $cliente->municipio?->departamento?->nombre
-            ?? '';
-
-        return [
-            'id' => (string) $cliente->id,
-            'fecha' => $cliente->created_at?->format('d/M Y g:i a') ?? '',
-            'modificacion' => $cliente->updated_at?->format('d/M Y g:i a') ?? '',
-            'gestion' => '+' . ($cliente->created_at?->diffInDays(now()) ?? 0) . ' d',
-            'campania' => $cliente->campania,
-            'producto' => $cliente->producto,
-            'canal' => $cliente->canal,
-            'cedula' => $cliente->cedula,
-            'nombre' => $cliente->nombre_cliente,
-            'perfil' => $cliente->perfil,
-            'empresa' => $cliente->empresa,
-            'monto' => '$ ' . $cliente->monto_filtrado,
-            'plazo' => (string) $cliente->plazo,
-            'status' => $cliente->status,
-            'sub_status' => $cliente->sub_status,
-            'asesor' => strtoupper($cliente->user?->name ?? 'ASESOR FREELANCE'),
-            'supervisor' => 'ANDREA GONZALEZ MONJE',
-            'ciudad' => $cliente->municipio?->nombre ?? '',
-            'departamento' => $departamentoNombre,
-            'observaciones' => $cliente->observaciones,
-            'resultado_fecha' => $cliente->updated_at?->format('d/M Y | g:i a') ?? '',
-            'recordatorio' => $cliente->recordatorio,
-        ];
-    }
-
-    public function filtrosIndex()
-    {
-        $registros = Cliente::with(['user', 'municipio.departamento', 'departamento'])
-            ->latest()
-            ->get()
-            ->map(function (Cliente $cliente) {
-                return $this->mapRegistro($cliente);
-            });
-
-        return view('gestion_filtros', compact('registros'));
-    }
-
-    public function filtrosShow(string $id)
-    {
-        $cliente = Cliente::with(['user', 'municipio.departamento', 'departamento'])->findOrFail($id);
-        $registro = $this->mapRegistro($cliente);
-
-        return view('gestion_filtros_detalle', compact('registro'));
-    }
+    use InteractsWithClienteSupports;
 
     public function create()
     {
         $departamentos = Departamento::orderBy('nombre')->get();
+
         return view('registros', compact('departamentos'));
     }
 
-    public function getMunicipios($departamentoId)
+    public function getMunicipios(string $departamentoId)
     {
         $municipios = Municipio::where('departamento_id', $departamentoId)
             ->orderBy('nombre')
@@ -108,9 +60,9 @@ class clienteController extends Controller
             'soporte_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
         ]);
 
-        $soporte1 = $request->hasFile('soporte_1') ? $request->file('soporte_1')->store('soportes', 'public') : '';
-        $soporte2 = $request->hasFile('soporte_2') ? $request->file('soporte_2')->store('soportes', 'public') : '';
-        $soporte3 = $request->hasFile('soporte_3') ? $request->file('soporte_3')->store('soportes', 'public') : '';
+        $soporte1 = $this->storeSupportFile($request, 'soporte_1', 'soportes');
+        $soporte2 = $this->storeSupportFile($request, 'soporte_2', 'soportes');
+        $soporte3 = $this->storeSupportFile($request, 'soporte_3', 'soportes');
 
         Cliente::create([
             'user_id' => $request->user()?->id,
@@ -138,8 +90,8 @@ class clienteController extends Controller
             'celular_cliente' => $data['celular_cliente'],
             'otros_ingresos' => $data['otros_ingresos'],
             'observaciones' => $data['observaciones'],
-            'status' => 'Viable',
-            'sub_status' => 'Pendiente Radicar',
+            'status' => 'Inicia Filtro',
+            'sub_status' => 'Inicia Filtro',
             'recordatorio' => 'Recordatorio / Tarea',
             'soporte_1' => $soporte1,
             'soporte_2' => $soporte2,

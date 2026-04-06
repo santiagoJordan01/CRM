@@ -8,6 +8,7 @@ class Cliente extends Model
 {
     protected $fillable = [
         'user_id',
+        'mesa_control_user_id',
         'campania',
         'producto',
         'cedula',
@@ -32,17 +33,23 @@ class Cliente extends Model
         'celular_cliente',
         'otros_ingresos',
         'observaciones',
+        'observacion_mesa_control',
         'status',
         'sub_status',
         'recordatorio',
+        'mesa_control_respondido_at',
         'soporte_1',
         'soporte_2',
         'soporte_3',
+        'mesa_soporte_1',
+        'mesa_soporte_2',
+        'mesa_soporte_3',
     ];
 
     protected $casts = [
         'fecha_vinculacion' => 'date',
         'fecha_nacimiento' => 'date',
+        'mesa_control_respondido_at' => 'datetime',
     ];
 
     public function departamento()
@@ -58,5 +65,10 @@ class Cliente extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function mesaControlUser()
+    {
+        return $this->belongsTo(User::class, 'mesa_control_user_id');
     }
 }

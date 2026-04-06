@@ -35,12 +35,12 @@ return new class extends Migration
             $table->string('celular_cliente', 20);
             $table->string('otros_ingresos', 30);
             $table->text('observaciones');
-            $table->string('status', 40)->default('Viable');
-            $table->string('sub_status', 80)->default('Pendiente Radicar');
+            $table->string('status', 40)->default('Inicia Filtro');
+            $table->string('sub_status', 80)->default('Inicia Filtro');
             $table->string('recordatorio', 255)->default('Recordatorio / Tarea');
-            $table->string('soporte_1', 255);
-            $table->string('soporte_2', 255);
-            $table->string('soporte_3', 255);
+            $table->string('soporte_1', 255)->nullable();
+            $table->string('soporte_2', 255)->nullable();
+            $table->string('soporte_3', 255)->nullable();
             $table->timestamps();
 
             $table->index('cedula');

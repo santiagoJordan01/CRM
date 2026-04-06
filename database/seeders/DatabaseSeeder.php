@@ -18,16 +18,27 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@gmail.com',
-            'password' => Hash::make('admin123'),
+        User::updateOrCreate(
+            ['email' => 'asesor@gmail.com'],
+            [
+                'name' => 'Asesor CRM',
+                'role' => 'asesor',
+                'password' => Hash::make('admin123'),
+            ]
+        );
 
+        User::updateOrCreate(
+            ['email' => 'supervisor@gmail.com'],
+            [
+                'name' => 'Mesa de Control',
+                'role' => 'supervisor',
+                'password' => Hash::make('admin123'),
+            ]
+        );
+
+        $this->call([
+            DepartamentosSeeder::class,
+            MunicipiosSeeder::class,
         ]);
-
-          $this->call([
-        DepartamentosSeeder::class,
-        MunicipiosSeeder::class,
-    ]);
     }
 }

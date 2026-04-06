@@ -14,6 +14,18 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger" role="alert">
+            <strong>No se pudo crear el filtro.</strong>
+            <ul class="mb-0 mt-2">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <form class="registros-form" action="{{ route('registros.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="registros-grid">
@@ -225,7 +237,6 @@
             <h1 class="attach-title">
                 <i class="fas fa-paperclip"></i> Adjuntar Archivos
             </h1>
-            <p class="attach-subtitle">Adjunte soportes opcionales (máximo 3 archivos). Formatos permitidos: PDF, DOC, DOCX, JPG, JPEG, PNG, MP3, WAV, OGG, M4A, MP4, MOV, AVI, MKV, WEBM.</p>
 
             <div class="attach-grid">
                 <!-- Soporte 1 -->
@@ -638,7 +649,7 @@
             if (!digits) {
                 return '';
             }
-            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return '$' + digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
         function aplicarMascaraMoneda(selector) {

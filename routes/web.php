@@ -1,7 +1,9 @@
 <?php
 
-use App\Http\Controllers\clienteController;
-use App\Models\Departamento;
+use App\Http\Controllers\GestionClienteController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\RegistroClienteController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -29,32 +31,50 @@ Route::middleware('guest')->group(function () {
 
         return back()
             ->withErrors(['email' => 'Credenciales incorrectas.'])
-            ->onlyInfput('email');
+            ->onlyInput('email');
     })->name('login.store');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/home', function () {
-        return view('home');
-    })->name('home');
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
+    Route::get('/notificaciones/{id}/abrir', [NotificacionController::class, 'abrir'])->name('notifications.open');
 
-    Route::get('/registros', [clienteController::class, 'create'])->name('registros');
-    Route::post('/registros', [clienteController::class, 'store'])->name('registros.store');
+    Route::middleware('role:asesor,supervisor')->group(function () {
+        Route::get('/registros', [RegistroClienteController::class, 'create'])->name('registros');
+        Route::post('/registros', [RegistroClienteController::class, 'store'])->name('registros.store');
+    });
 
-    Route::get('/gestion-filtros', [clienteController::class, 'filtrosIndex'])->name('filtros.index');
-    Route::get('/gestion-filtros/{id}', [clienteController::class, 'filtrosShow'])->name('filtros.show');
+    Route::get('/gestion-filtros', [GestionClienteController::class, 'filtrosIndex'])->name('filtros.index');
+    Route::get('/gestion-filtros/{id}/proceso', [GestionClienteController::class, 'filtrosProceso'])->name('filtros.proceso');
+    Route::get('/gestion-filtros/{id}', [GestionClienteController::class, 'filtrosShow'])->name('filtros.show');
+    Route::get('/proceso/{id}', [GestionClienteController::class, 'procesoIndex'])->name('proceso.index');
+    Route::post('/gestion-filtros/{id}/actualizacion-asesor', [GestionClienteController::class, 'filtrosActualizarAsesor'])
+        ->middleware('role:asesor')
+        ->name('filtros.asesor.update');
+    Route::post('/gestion-filtros/{id}/respuesta-mesa-control', [GestionClienteController::class, 'filtrosResponderMesaControl'])
+        ->middleware('role:supervisor')
+        ->name('filtros.responder');
 
-    Route::get('/gestion-radicados', function () {
-        return view('gestion_radicados');
-    })->name('radicados.index');
+    Route::get('/gestion-radicados', [GestionClienteController::class, 'radicadosIndex'])->name('radicados.index');
+    Route::get('/gestion-radicados/{id}/proceso', [GestionClienteController::class, 'radicadosProceso'])->name('radicados.proceso');
+    Route::get('/gestion-radicados/{id}', [GestionClienteController::class, 'radicadosShow'])->name('radicados.show');
+    Route::post('/gestion-radicados/{id}/respuesta-mesa-control', [GestionClienteController::class, 'radicadosResponderMesaControl'])
+        ->middleware('role:supervisor')
+        ->name('radicados.responder');
 
-    Route::get('/gestion-aprobados', function () {
-        return view('gestion_aprobados');
-    })->name('aprobados.index');
+    Route::get('/gestion-aprobados', [GestionClienteController::class, 'aprobadosIndex'])->name('aprobados.index');
+    Route::get('/gestion-aprobados/{id}/proceso', [GestionClienteController::class, 'aprobadosProceso'])->name('aprobados.proceso');
+    Route::get('/gestion-aprobados/{id}', [GestionClienteController::class, 'aprobadosShow'])->name('aprobados.show');
+    Route::post('/gestion-aprobados/{id}/respuesta-mesa-control', [GestionClienteController::class, 'aprobadosResponderMesaControl'])
+        ->middleware('role:supervisor')
+        ->name('aprobados.responder');
 
-    Route::get('/gestion-desembolso', function () {
-        return view('gestion_desembolso');
-    })->name('desembolso.index');
+    Route::get('/gestion-desembolso', [GestionClienteController::class, 'desembolsoIndex'])->name('desembolso.index');
+    Route::get('/gestion-desembolso/{id}/proceso', [GestionClienteController::class, 'desembolsoProceso'])->name('desembolso.proceso');
+    Route::get('/gestion-desembolso/{id}', [GestionClienteController::class, 'desembolsoShow'])->name('desembolso.show');
+    Route::post('/gestion-desembolso/{id}/respuesta-mesa-control', [GestionClienteController::class, 'desembolsoResponderMesaControl'])
+        ->middleware('role:supervisor')
+        ->name('desembolso.responder');
 
     Route::post('/logout', function (Request $request) {
         Auth::logout();
@@ -67,4 +87,4 @@ Route::middleware('auth')->group(function () {
 
 
 // routes/web.php
-Route::get('/municipios/{departamentoId}', [clienteController::class, 'getMunicipios'])->name('municipios.get');
+Route::get('/municipios/{departamentoId}', [RegistroClienteController::class, 'getMunicipios'])->name('municipios.get');

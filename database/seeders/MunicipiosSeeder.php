@@ -1136,7 +1136,13 @@ class MunicipiosSeeder extends Seeder
         ];
 
         foreach ($municipios as $municipio) {
-            Municipio::create($municipio);
+            Municipio::updateOrCreate(
+                ['cod_dane' => $municipio['cod_dane']],
+                [
+                    'departamento_id' => $municipio['departamento_id'],
+                    'nombre' => $municipio['nombre'],
+                ]
+            );
         }
     }
 }
