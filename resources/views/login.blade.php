@@ -135,7 +135,7 @@
 
         label {
             display: block;
-            font-size: 34px;
+            font-size: 16px;
             font-weight: 600;
             margin-bottom: 7px;
             color: #3e4755;
@@ -143,10 +143,11 @@
 
         input {
             width: 100%;
+            height: calc(1.5em + .75rem + 2px);
             border: 1px solid #cfd5dc;
             border-radius: 8px;
             padding: 11px 13px;
-            font-size: 28px;
+            font-size: 1.3rem;
             outline: none;
             font-family: inherit;
             color: #2f3744;
@@ -175,7 +176,7 @@
             background: var(--btn);
             color: #fff;
             font-family: inherit;
-            font-size: 33px;
+            font-size: 25px;
             font-weight: 600;
             padding: 9px 26px;
             min-width: 170px;

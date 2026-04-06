@@ -207,6 +207,19 @@
                         <label for="pro_mesa_soporte_3">Soporte 3:</label>
                         <input id="pro_mesa_soporte_3" name="mesa_soporte_3" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
                     </div>
+                    <div class="pro-update-field">
+                        <label for="pro_mesa_soporte_4">Soporte 4:</label>
+                        <input id="pro_mesa_soporte_4" name="mesa_soporte_4" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                    </div>
+                    <div class="pro-update-field">
+                        <label for="pro_mesa_soporte_5">Soporte 5:</label>
+                        <input id="pro_mesa_soporte_5" name="mesa_soporte_5" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                    </div>
+
+                    <div class="pro-update-field">
+                        <label for="pro_mesa_soporte_6">Soporte 6:</label>
+                        <input id="pro_mesa_soporte_6" name="mesa_soporte_6" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                    </div>
 
                     <div class="pro-update-field pro-update-field-full">
                         <label for="pro_observacion_mesa_control">Observaciones:</label>
