@@ -1,10 +1,19 @@
 @extends('layouts.crm')
 
-@section('title', 'Gestion aprobados | CRM')
+@php
+    $moduloContext = $moduloContext ?? [
+        'clave' => 'aprobados',
+        'titulo' => 'Aprobado',
+        'titulo_gestion' => 'Gestion aprobados',
+        'indexRoute' => 'aprobados.index',
+        'showRoute' => 'aprobados.show',
+        'procesoRoute' => 'aprobados.proceso',
+    ];
+    $registros = $registros ?? [];
+@endphp
+
+@section('title', ($moduloContext['titulo_gestion'] ?? 'Gestion aprobados') . ' | CRM')
 
 @section('content')
-    <section class="card">
-        <h1>Gestion aprobados</h1>
-        <p>Vista base para seguimiento de casos aprobados.</p>
-    </section>
+    @include('partials.gestion_modulo_listado')
 @endsection

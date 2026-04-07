@@ -25,7 +25,7 @@ class ClienteModuloContext
                 ],
                 'opcionesEstadoAsesor' => [
                     ['status' => 'Preradicacion Comercial', 'sub_status' => 'Pendiente Radicar'],
-                    ['status' => 'Envio Digital Docs', 'sub_status' => 'Pendiente Radicar'],
+                    ['status' => 'Preradicacion Comercial', 'sub_status' => 'Envio Digital Docs'],
                 ],
             ],
             'radicados' => [
@@ -36,7 +36,7 @@ class ClienteModuloContext
                 'showRoute' => 'radicados.show',
                 'procesoRoute' => 'radicados.proceso',
                 'responderRoute' => 'radicados.responder',
-                'subStatusResponder' => ['Pendiente Radicar'],
+                'subStatusResponder' => ['Pendiente Radicar', 'Envio Digital Docs'],
                 'opcionesEstado' => [
                     ['status' => 'Radicado', 'sub_status' => 'Pendiente Aprobacion'],
                     ['status' => 'No Radicado', 'sub_status' => 'No Gestionable'],
@@ -97,7 +97,9 @@ class ClienteModuloContext
 
         if ($modulo === 'radicados') {
             $query->where(function (Builder $q) {
-                $q->whereIn('status', ['Preradicacion Comercial', 'Envio Digital Docs', 'Radicado', 'No Radicado']);
+                $q->whereIn('status', ['Preradicacion Comercial', 'Radicado', 'No Radicado'])
+                    ->orWhere('sub_status', 'Envio Digital Docs')
+                    ->orWhere('status', 'Envio Digital Docs');
             });
 
             return;
@@ -137,7 +139,8 @@ class ClienteModuloContext
         }
 
         if (
-            in_array((string) $cliente->status, ['Preradicacion Comercial', 'Envio Digital Docs', 'Radicado', 'No Radicado'], true)
+            in_array((string) $cliente->status, ['Preradicacion Comercial', 'Radicado', 'No Radicado', 'Envio Digital Docs'], true)
+            || (string) $cliente->sub_status === 'Envio Digital Docs'
         ) {
             return 'radicados';
         }

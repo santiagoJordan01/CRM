@@ -118,58 +118,14 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
     @if($puedeResponderMesaControl)
     <article class="gfd-card gfd-response-card">
         <h3>Respuesta de Mesa de Control</h3>
-        <form action="{{ route($moduloContext['responderRoute'] ?? 'filtros.responder', $registro['id']) }}" method="POST" enctype="multipart/form-data" class="gfd-response-form">
-            @csrf
-            <div class="field">
-                <label for="status">Estado de respuesta</label>
-                <select id="status" name="status" required>
-                    <option value="">Seleccione</option>
-                    @foreach($opcionesEstado as $opcion)
-                        <option value="{{ $opcion['status'] }}">{{ $opcion['status'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="field">
-                <label for="sub_status">Sub status de respuesta</label>
-                <select id="sub_status" name="sub_status" required>
-                    <option value="">Seleccione</option>
-                    @foreach($subEstadosRespuesta as $subEstado)
-                        <option value="{{ $subEstado }}">{{ $subEstado }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="field full">
-                <label for="observacion_mesa_control">Observacion</label>
-                <textarea id="observacion_mesa_control" name="observacion_mesa_control" rows="4" required></textarea>
-            </div>
-
-            <div class="field">
-                <label for="mesa_soporte_1">Soporte 1</label>
-                <input type="file" id="mesa_soporte_1" name="mesa_soporte_1" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm">
-            </div>
-
-            <div class="field">
-                <label for="mesa_soporte_2">Soporte 2</label>
-                <input type="file" id="mesa_soporte_2" name="mesa_soporte_2" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm">
-            </div>
-
-            <div class="field">
-                <label for="mesa_soporte_3">Soporte 3</label>
-                <input type="file" id="mesa_soporte_3" name="mesa_soporte_3" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm">
-            </div>
-
-            <div class="field full">
-                <button type="submit" class="gfd-submit-btn">Guardar respuesta</button>
-            </div>
-        </form>
+        <p>Las respuestas se gestionan desde el módulo <strong>Proceso</strong>.</p>
+        <a href="{{ route($moduloContext['procesoRoute'] ?? 'filtros.proceso', $registro['id']) }}" class="gfd-submit-btn">Abrir Proceso</a>
     </article>
-    @elseif($esSupervisor && empty($registro['observacion_mesa_control']))
-    <article class="gfd-card gfd-response-card">
-        <p class="gfd-note">Este registro ya no esta en estado pendiente para este modulo y no requiere nueva respuesta.</p>
-    </article>
-    @endif
+        @elseif($esSupervisor && empty($registro['observacion_mesa_control']))
+        <article class="gfd-card gfd-response-card">
+            <p class="gfd-note">Este registro ya no está en estado pendiente para este módulo y no requiere nueva respuesta.</p>
+        </article>
+        @endif
 
     <div class="gfd-actions">
         <a href="{{ route($moduloContext['indexRoute'] ?? 'filtros.index') }}" class="gfd-back-btn">Volver al listado</a>

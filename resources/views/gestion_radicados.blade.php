@@ -1,10 +1,19 @@
 @extends('layouts.crm')
 
-@section('title', 'Gestion radicados | CRM')
+@php
+    $moduloContext = $moduloContext ?? [
+        'clave' => 'radicados',
+        'titulo' => 'Radicado',
+        'titulo_gestion' => 'Gestion radicados',
+        'indexRoute' => 'radicados.index',
+        'showRoute' => 'radicados.show',
+        'procesoRoute' => 'radicados.proceso',
+    ];
+    $registros = $registros ?? [];
+@endphp
+
+@section('title', ($moduloContext['titulo_gestion'] ?? 'Gestion radicados') . ' | CRM')
 
 @section('content')
-    <section class="card">
-        <h1>Gestion radicados</h1>
-        <p>Vista base para administrar radicados. Puedes agregar aqui tu tabla y filtros.</p>
-    </section>
+    @include('partials.gestion_modulo_listado')
 @endsection

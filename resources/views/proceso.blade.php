@@ -12,7 +12,14 @@
         ['status' => 'No Viable', 'sub_status' => 'Expo Titular Color Semaforo'],
     ];
 
-    $opcionesEstadoAsesor = $opcionesEstadoAsesor ?? [];
+    $opcionesEstadoAsesor = $opcionesEstadoAsesor ?? [
+        ['status' => 'Preradicacion Comercial', 'sub_status' => 'Pendiente Radicar'],
+        ['status' => 'Preradicacion Comercial', 'sub_status' => 'Envio Digital Docs'],
+    ];
+    $catalogoStatusGeneral = $catalogoStatusGeneral ?? [];
+    $catalogoSubStatusGeneral = $catalogoSubStatusGeneral ?? [];
+    $mostrarPanelAsesor = $mostrarPanelAsesor ?? false;
+    $esAsesor = $esAsesor ?? false;
     $puedeActualizarAsesor = $puedeActualizarAsesor ?? false;
     $puedeActualizarSupervisor = $puedeActualizarSupervisor ?? false;
 
@@ -232,10 +239,23 @@
                 </form>
             </div>
         </article>
-    @elseif($puedeActualizarAsesor)
+    @elseif($mostrarPanelAsesor)
         @php
-            $estadosAsesor = collect($opcionesEstadoAsesor)->pluck('status')->unique()->values();
-            $subEstadosAsesor = collect($opcionesEstadoAsesor)->pluck('sub_status')->unique()->values();
+            $estadosAsesorPermitidos = collect($opcionesEstadoAsesor)->pluck('status')->unique()->values();
+            $subEstadosAsesorPermitidos = collect($opcionesEstadoAsesor)->pluck('sub_status')->unique()->values();
+
+            $estadosAsesorVisibles = collect($catalogoStatusGeneral)->filter()->unique()->values();
+            $subEstadosAsesorVisibles = collect($catalogoSubStatusGeneral)->filter()->unique()->values();
+
+            if ($estadosAsesorVisibles->isEmpty()) {
+                $estadosAsesorVisibles = $estadosAsesorPermitidos;
+            }
+
+            if ($subEstadosAsesorVisibles->isEmpty()) {
+                $subEstadosAsesorVisibles = $subEstadosAsesorPermitidos;
+            }
+
+            $soloLecturaTexto = ' (solo lectura)';
         @endphp
 
         <article class="pro-card pro-update-card">
@@ -249,12 +269,28 @@
                 <form class="pro-update-form" action="{{ route('filtros.asesor.update', $registro['id']) }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
+                    <div class="pro-update-field pro-update-field-full">
+                        <p class="pro-update-help">
+                            Puedes visualizar todos los status y sub status del flujo. Solo puedes seleccionar los permitidos para asesor.
+                        </p>
+                        @if(! $puedeActualizarAsesor)
+                            <p class="pro-update-note">
+                                Actualizacion no disponible: el cliente debe estar en <strong>Viable / Pendiente Radicar</strong>.
+                            </p>
+                        @endif
+                    </div>
+
                     <div class="pro-update-field">
                         <label for="pro_status_asesor">Status:</label>
                         <select id="pro_status_asesor" name="status" required>
                             <option value="">- Seleccione -</option>
-                            @foreach($estadosAsesor as $estado)
-                                <option value="{{ $estado }}" {{ old('status') === $estado ? 'selected' : '' }}>{{ $estado }}</option>
+                            @foreach($estadosAsesorVisibles as $estado)
+                                @php
+                                    $permitidoStatus = $estadosAsesorPermitidos->contains($estado);
+                                @endphp
+                                <option value="{{ $estado }}" {{ old('status') === $estado ? 'selected' : '' }} {{ $permitidoStatus ? '' : 'disabled' }}>
+                                    {{ $estado }}{{ $permitidoStatus ? '' : $soloLecturaTexto }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -263,8 +299,13 @@
                         <label for="pro_sub_status_asesor">Sub Status:</label>
                         <select id="pro_sub_status_asesor" name="sub_status" required>
                             <option value="">- Seleccione -</option>
-                            @foreach($subEstadosAsesor as $subEstado)
-                                <option value="{{ $subEstado }}" {{ old('sub_status') === $subEstado ? 'selected' : '' }}>{{ $subEstado }}</option>
+                            @foreach($subEstadosAsesorVisibles as $subEstado)
+                                @php
+                                    $permitidoSubStatus = $subEstadosAsesorPermitidos->contains($subEstado);
+                                @endphp
+                                <option value="{{ $subEstado }}" {{ old('sub_status') === $subEstado ? 'selected' : '' }} {{ $permitidoSubStatus ? '' : 'disabled' }}>
+                                    {{ $subEstado }}{{ $permitidoSubStatus ? '' : $soloLecturaTexto }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -284,13 +325,30 @@
                         <input id="pro_soporte_3" name="soporte_3" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
                     </div>
 
+                    <div class="pro-update-field">
+                        <label for="pro_soporte_4">Soporte 4:</label>
+                        <input id="pro_soporte_4" name="soporte_4" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                    </div>
+
+                    <div class="pro-update-field">
+                        <label for="pro_soporte_5">Soporte 5:</label>
+                        <input id="pro_soporte_5" name="soporte_5" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                    </div>
+
+                    <div class="pro-update-field">
+                        <label for="pro_soporte_6">Soporte 6:</label>
+                        <input id="pro_soporte_6" name="soporte_6" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp3,.wav,.ogg,.m4a,.mp4,.mov,.avi,.mkv,.webm" />
+                    </div>
+
                     <div class="pro-update-field pro-update-field-full">
                         <label for="pro_observaciones">Observaciones:</label>
                         <textarea id="pro_observaciones" name="observaciones" rows="4" placeholder="Ingresa observaciones de la gestion">{{ old('observaciones') }}</textarea>
                     </div>
 
                     <div class="pro-update-actions">
-                        <button type="submit" class="pro-update-btn">Actualizar Filtro</button>
+                        <button type="submit" class="pro-update-btn" {{ $puedeActualizarAsesor ? '' : 'disabled' }}>
+                            {{ $puedeActualizarAsesor ? 'Actualizar Filtro' : 'Actualizacion no disponible' }}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -624,6 +682,26 @@
         grid-column: 1 / -1;
     }
 
+    .pro-update-help,
+    .pro-update-note {
+        margin: 0;
+        font-size: 0.82rem;
+        line-height: 1.35;
+    }
+
+    .pro-update-help {
+        color: #31567f;
+    }
+
+    .pro-update-note {
+        margin-top: 0.25rem;
+        color: #8f3030;
+    }
+
+    .pro-update-field select option:disabled {
+        color: #8d9cb0;
+    }
+
     .pro-update-btn {
         border: none;
         border-radius: 6px;
@@ -637,6 +715,12 @@
 
     .pro-update-btn:hover {
         filter: brightness(0.94);
+    }
+
+    .pro-update-btn:disabled {
+        background: #8ca3bb;
+        cursor: not-allowed;
+        filter: none;
     }
 
     .pro-actions {

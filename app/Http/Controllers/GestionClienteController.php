@@ -24,6 +24,9 @@ class GestionClienteController extends Controller
             $this->soporteMeta($cliente->soporte_1),
             $this->soporteMeta($cliente->soporte_2),
             $this->soporteMeta($cliente->soporte_3),
+            $this->soporteMeta($cliente->soporte_4),
+            $this->soporteMeta($cliente->soporte_5),
+            $this->soporteMeta($cliente->soporte_6),
         ]));
 
         $soportesMesaControl = array_values(array_filter([
@@ -145,7 +148,14 @@ class GestionClienteController extends Controller
                 return $this->mapRegistro($cliente);
             });
 
-        return view('gestion_filtros', compact('registros', 'moduloContext'));
+        $vistaPorModulo = [
+            'filtros' => 'gestion_filtros',
+            'radicados' => 'gestion_radicados',
+            'aprobados' => 'gestion_aprobados',
+            'desembolso' => 'gestion_desembolso',
+        ];
+
+        return view($vistaPorModulo[$modulo] ?? 'gestion_filtros', compact('registros', 'moduloContext'));
     }
 
     private function mostrarModuloDetalle(Request $request, string $modulo, string $id)
@@ -176,90 +186,209 @@ class GestionClienteController extends Controller
         ));
     }
 
-    private function mostrarModuloProceso(Request $request, string $modulo, string $id)
-    {
-        $moduloContext = ClienteModuloContext::get($modulo);
+   private function mostrarModuloProceso(Request $request, string $modulo, string $id)
+{
+    $moduloContext = ClienteModuloContext::get($modulo);
 
-        $cliente = Cliente::with(['user', 'mesaControlUser', 'municipio.departamento', 'departamento'])->findOrFail($id);
-        $this->validarAccesoFiltro($cliente, $request);
+    $cliente = Cliente::with(['user', 'mesaControlUser', 'municipio.departamento', 'departamento'])->findOrFail($id);
+    $this->validarAccesoFiltro($cliente, $request);
 
-        $registro = $this->mapRegistro($cliente);
+    $registro = $this->mapRegistro($cliente);
 
-        $soportesAsesorHistorial = array_values(array_filter([
-            $this->soporteMeta($cliente->soporte_1),
-            $this->soporteMeta($cliente->soporte_2),
-            $this->soporteMeta($cliente->soporte_3),
-        ]));
+    $soportesAsesorHistorial = array_values(array_filter([
+        $this->soporteMeta($cliente->soporte_1),
+        $this->soporteMeta($cliente->soporte_2),
+        $this->soporteMeta($cliente->soporte_3),
+        $this->soporteMeta($cliente->soporte_4),
+        $this->soporteMeta($cliente->soporte_5),
+        $this->soporteMeta($cliente->soporte_6),
+    ]));
 
-        $soportesMesaHistorial = array_values(array_filter([
-            $this->soporteMeta($cliente->mesa_soporte_1),
-            $this->soporteMeta($cliente->mesa_soporte_2),
-            $this->soporteMeta($cliente->mesa_soporte_3),
-        ]));
+    $soportesMesaHistorial = array_values(array_filter([
+        $this->soporteMeta($cliente->mesa_soporte_1),
+        $this->soporteMeta($cliente->mesa_soporte_2),
+        $this->soporteMeta($cliente->mesa_soporte_3),
+    ]));
 
-        $historial = [
-            [
-                'fecha' => $cliente->created_at?->format('d/M Y | g:i a') ?? '',
-                'status' => 'Inicia Filtro',
-                'sub_status' => 'Inicia Filtro',
-                'comentario' => $cliente->observaciones ?: '-',
-                'respuesta_archivos' => [],
-                'soporte_archivos' => $soportesAsesorHistorial,
-                'autor' => strtoupper($cliente->user?->name ?? 'ASESOR FREELANCE'),
-                'orden' => $cliente->created_at?->timestamp ?? 0,
-            ],
-        ];
+    $transicionesEstado = ClienteNotificacion::with('actor')
+        ->where('cliente_id', $cliente->id)
+        ->orderBy('created_at')
+        ->get();
 
-        if ($cliente->mesa_control_respondido_at) {
-            $historial[] = [
-                'fecha' => $cliente->mesa_control_respondido_at?->format('d/M Y | g:i a') ?? '',
-                'status' => $cliente->status,
-                'sub_status' => $cliente->sub_status,
-                'comentario' => $cliente->observacion_mesa_control ?: '-',
-                'respuesta_archivos' => $soportesMesaHistorial,
-                'soporte_archivos' => [],
-                'autor' => strtoupper($cliente->mesaControlUser?->name ?? 'MESA DE CONTROL'),
-                'orden' => $cliente->mesa_control_respondido_at?->timestamp ?? 0,
-            ];
+    $historial = [
+        [
+            'fecha' => $cliente->created_at?->format('d/M Y | g:i a') ?? '',
+            'status' => 'Inicia Filtro',
+            'sub_status' => 'Inicia Filtro',
+            'comentario' => $cliente->observaciones ?: '-',
+            'respuesta_archivos' => [],
+            'soporte_archivos' => $soportesAsesorHistorial,
+            'autor' => strtoupper($cliente->user?->name ?? 'ASESOR FREELANCE'),
+            'orden' => $cliente->created_at?->timestamp ?? 0,
+        ],
+    ];
+
+    foreach ($transicionesEstado as $transicion) {
+        $statusTransicion = (string) ($transicion->new_status ?? '');
+        $subStatusTransicion = (string) ($transicion->new_sub_status ?? '');
+
+        if ($statusTransicion === '' && $subStatusTransicion === '') {
+            continue;
         }
 
-        usort($historial, function (array $a, array $b): int {
-            return ($b['orden'] ?? 0) <=> ($a['orden'] ?? 0);
-        });
+        $fechaTransicion = $transicion->created_at;
+        $esMesaControlActual = $cliente->mesa_control_respondido_at
+            && $fechaTransicion
+            && abs($fechaTransicion->diffInSeconds($cliente->mesa_control_respondido_at, false)) <= 1;
 
-        $soportesCreacionSlots = $this->soporteSlots(
-            $cliente->soporte_1,
-            $cliente->soporte_2,
-            $cliente->soporte_3
-        );
-
-        $opcionesEstado = $moduloContext['opcionesEstado'];
-        $opcionesEstadoAsesor = $moduloContext['opcionesEstadoAsesor'] ?? [];
-        $user = $request->user();
-
-        $puedeActualizarSupervisor = $user?->isSupervisor() === true;
-
-        $puedeActualizarAsesor = $user?->isAsesor()
-            && $modulo === 'filtros'
-            && (string) $cliente->status === 'Viable'
-            && (string) $cliente->sub_status === 'Pendiente Radicar';
-
-        return view('proceso', compact(
-            'registro',
-            'historial',
-            'soportesCreacionSlots',
-            'moduloContext',
-            'opcionesEstado',
-            'opcionesEstadoAsesor',
-            'puedeActualizarAsesor',
-            'puedeActualizarSupervisor'
-        ));
+        $historial[] = [
+            'fecha' => $fechaTransicion?->format('d/M Y | g:i a') ?? '',
+            'status' => $statusTransicion !== '' ? $statusTransicion : '-',
+            'sub_status' => $subStatusTransicion !== '' ? $subStatusTransicion : '-',
+            'comentario' => $esMesaControlActual ? ($cliente->observacion_mesa_control ?: '-') : '-',
+            'respuesta_archivos' => $esMesaControlActual ? $soportesMesaHistorial : [],
+            'soporte_archivos' => [],
+            'autor' => strtoupper($transicion->actor?->name ?? 'USUARIO CRM'),
+            'orden' => $fechaTransicion?->timestamp ?? 0,
+        ];
     }
+
+    $ultimaEntrada = collect($historial)->sortBy('orden')->last();
+    $statusActualCliente = (string) ($cliente->status ?? '');
+    $subStatusActualCliente = (string) ($cliente->sub_status ?? '');
+
+    if (
+        $statusActualCliente !== ''
+        && (
+            ! $ultimaEntrada
+            || (string) ($ultimaEntrada['status'] ?? '') !== $statusActualCliente
+            || (string) ($ultimaEntrada['sub_status'] ?? '') !== $subStatusActualCliente
+        )
+    ) {
+        $autorActual = strtoupper($cliente->mesaControlUser?->name ?? $cliente->user?->name ?? 'USUARIO CRM');
+
+        $historial[] = [
+            'fecha' => $cliente->updated_at?->format('d/M Y | g:i a') ?? '',
+            'status' => $statusActualCliente,
+            'sub_status' => $subStatusActualCliente !== '' ? $subStatusActualCliente : '-',
+            'comentario' => $cliente->observacion_mesa_control ?: '-',
+            'respuesta_archivos' => [],
+            'soporte_archivos' => $soportesAsesorHistorial,
+            'autor' => $autorActual,
+            'orden' => $cliente->updated_at?->timestamp ?? 0,
+        ];
+    }
+
+    if (
+        $transicionesEstado->isEmpty()
+        && ((string) $cliente->status !== 'Inicia Filtro' || (string) $cliente->sub_status !== 'Inicia Filtro')
+    ) {
+        $historial[] = [
+            'fecha' => $cliente->updated_at?->format('d/M Y | g:i a') ?? '',
+            'status' => (string) $cliente->status,
+            'sub_status' => (string) $cliente->sub_status,
+            'comentario' => $cliente->observacion_mesa_control ?: '-',
+            'respuesta_archivos' => $soportesMesaHistorial,
+            'soporte_archivos' => [],
+            'autor' => strtoupper($cliente->mesaControlUser?->name ?? 'USUARIO CRM'),
+            'orden' => $cliente->updated_at?->timestamp ?? 0,
+        ];
+    }
+
+    usort($historial, function (array $a, array $b): int {
+        return ($b['orden'] ?? 0) <=> ($a['orden'] ?? 0);
+    });
+
+    $soportesCreacionSlots = [
+        [
+            'titulo' => 'Soporte 1',
+            'archivo' => $this->soporteMeta($cliente->soporte_1),
+        ],
+        [
+            'titulo' => 'Soporte 2',
+            'archivo' => $this->soporteMeta($cliente->soporte_2),
+        ],
+        [
+            'titulo' => 'Soporte 3',
+            'archivo' => $this->soporteMeta($cliente->soporte_3),
+        ],
+        [
+            'titulo' => 'Soporte 4',
+            'archivo' => $this->soporteMeta($cliente->soporte_4),
+        ],
+        [
+            'titulo' => 'Soporte 5',
+            'archivo' => $this->soporteMeta($cliente->soporte_5),
+        ],
+        [
+            'titulo' => 'Soporte 6',
+            'archivo' => $this->soporteMeta($cliente->soporte_6),
+        ],
+    ];
+
+    $user = $request->user();
+
+    $puedeActualizarSupervisor = $user?->isSupervisor() === true;
+    $esAsesor = $user?->isAsesor() === true;
+
+    $puedeActualizarAsesor = $esAsesor
+        && $modulo === 'filtros'
+        && (string) $cliente->status === 'Viable'
+        && (string) $cliente->sub_status === 'Pendiente Radicar';
+
+    $opcionesEstado = $moduloContext['opcionesEstado'] ?? [];
+
+    $filtrosContext = ClienteModuloContext::get('filtros');
+    $opcionesEstadoAsesor = $filtrosContext['opcionesEstadoAsesor'] ?? [];
+
+    $contextosModulos = ClienteModuloContext::all();
+
+    $opcionesGlobales = collect($contextosModulos)->flatMap(function (array $contexto) {
+        return array_merge(
+            $contexto['opcionesEstado'] ?? [],
+            $contexto['opcionesEstadoAsesor'] ?? []
+        );
+    });
+
+    $catalogoStatusGeneral = collect(['Inicia Filtro'])
+        ->merge($opcionesGlobales->pluck('status'))
+        ->unique()
+        ->values()
+        ->all();
+
+    $catalogoSubStatusGeneral = collect(['Inicia Filtro'])
+        ->merge(collect($contextosModulos)->flatMap(function (array $contexto) {
+            return $contexto['subStatusResponder'] ?? [];
+        }))
+        ->merge($opcionesGlobales->pluck('sub_status'))
+        ->unique()
+        ->values()
+        ->all();
+
+    $mostrarPanelAsesor = $esAsesor;
+
+    return view('proceso', compact(
+        'registro',
+        'historial',
+        'soportesCreacionSlots',
+        'moduloContext',
+        'opcionesEstado',
+        'opcionesEstadoAsesor',
+        'catalogoStatusGeneral',
+        'catalogoSubStatusGeneral',
+        'mostrarPanelAsesor',
+        'esAsesor',
+        'puedeActualizarAsesor',
+        'puedeActualizarSupervisor'
+    ));
+}
 
     public function filtrosActualizarAsesor(Request $request, string $id)
     {
         $cliente = Cliente::findOrFail($id);
         $this->validarAccesoFiltro($cliente, $request);
+        $statusAnterior = $cliente->status;
+        $subStatusAnterior = $cliente->sub_status;
 
         if (! $request->user()?->isAsesor()) {
             abort(403, 'Solo un asesor puede actualizar este estado.');
@@ -293,6 +422,9 @@ class GestionClienteController extends Controller
             'soporte_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
             'soporte_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
             'soporte_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
+            'soporte_4' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
+            'soporte_5' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
+            'soporte_6' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
         ]);
 
         $combinacionValida = $opcionesEstadoAsesor->contains(function (array $opcion) use ($data): bool {
@@ -312,8 +444,14 @@ class GestionClienteController extends Controller
             ?? $cliente->soporte_2;
         $soporte3 = $this->storeSupportFile($request, 'soporte_3', 'soportes')
             ?? $cliente->soporte_3;
+        $soporte4 = $this->storeSupportFile($request, 'soporte_4', 'soportes')
+            ?? $cliente->soporte_4;
+        $soporte5 = $this->storeSupportFile($request, 'soporte_5', 'soportes')
+            ?? $cliente->soporte_5;
+        $soporte6 = $this->storeSupportFile($request, 'soporte_6', 'soportes')
+            ?? $cliente->soporte_6;
 
-        if (! $soporte1 && ! $soporte2 && ! $soporte3) {
+        if (! $soporte1 && ! $soporte2 && ! $soporte3 && ! $soporte4 && ! $soporte5 && ! $soporte6) {
             return back()->withErrors([
                 'soporte_1' => 'Debes adjuntar al menos un soporte para enviar este cliente a Radicados.',
             ])->withInput();
@@ -326,7 +464,17 @@ class GestionClienteController extends Controller
             'soporte_1' => $soporte1,
             'soporte_2' => $soporte2,
             'soporte_3' => $soporte3,
+            'soporte_4' => $soporte4,
+            'soporte_5' => $soporte5,
+            'soporte_6' => $soporte6,
         ]);
+
+        $this->crearNotificacionCambioEstado(
+            $cliente->fresh(),
+            $statusAnterior,
+            $subStatusAnterior,
+            $request->user()?->id
+        );
 
         return redirect()
             ->route('radicados.show', $cliente->id)

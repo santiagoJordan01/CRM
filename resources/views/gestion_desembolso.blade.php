@@ -1,10 +1,19 @@
 @extends('layouts.crm')
 
-@section('title', 'Gestion desembolso | CRM')
+@php
+    $moduloContext = $moduloContext ?? [
+        'clave' => 'desembolso',
+        'titulo' => 'Desembolso',
+        'titulo_gestion' => 'Gestion desembolso',
+        'indexRoute' => 'desembolso.index',
+        'showRoute' => 'desembolso.show',
+        'procesoRoute' => 'desembolso.proceso',
+    ];
+    $registros = $registros ?? [];
+@endphp
+
+@section('title', ($moduloContext['titulo_gestion'] ?? 'Gestion desembolso') . ' | CRM')
 
 @section('content')
-    <section class="card">
-        <h1>Gestion desembolso</h1>
-        <p>Vista base para control de solicitudes en proceso de desembolso.</p>
-    </section>
+    @include('partials.gestion_modulo_listado')
 @endsection
