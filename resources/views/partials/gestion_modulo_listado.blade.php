@@ -81,9 +81,9 @@
                         <td>
                             @php
                                 $statusClass = 'bad';
-                                if (in_array($registro['status'], ['Viable', 'Preradicacion Comercial', 'Envio Digital Docs', 'Radicado', 'Aprobado', 'Desembolsado'], true)) {
+                                if (in_array($registro['status'], ['Viable', 'Preradicacion Comercial', 'Envio Digital Docs', 'Radicacion Iniciada', 'En Estudio', 'Radicado', 'Aprobado', 'Contabilizacion aceptada', 'Desembolsado'], true)) {
                                     $statusClass = 'ok';
-                                } elseif (in_array($registro['status'], ['Inicia Filtro', 'Pendiente'], true)) {
+                                } elseif (in_array($registro['status'], ['Inicia Filtro', 'Pendiente', 'Contabilizacion Pendiente'], true)) {
                                     $statusClass = 'pending';
                                 }
 

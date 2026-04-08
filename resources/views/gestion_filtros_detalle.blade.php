@@ -95,6 +95,22 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
         <div class="gfd-financieras">
 
             <div class="fin-card support-full">
+                <h4>Soportes del Asesor</h4>
+                @if(!empty($registro['soportes_asesor']))
+                    <div class="support-files">
+                        @foreach($registro['soportes_asesor'] as $archivo)
+                            <a href="{{ $archivo['url'] }}" target="_blank" rel="noopener" class="support-slot-link">
+                                <i class="fas fa-file-download"></i>
+                                <span>{{ $archivo['nombre'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="support-slot-empty">Sin archivos cargados por el asesor.</p>
+                @endif
+            </div>
+
+            <div class="fin-card support-full">
                 <h4>Soportes de Mesa de Control</h4>
                 <div class="support-slots">
                     @foreach($soportesMesaControlSlots as $slot)
@@ -115,17 +131,44 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
         </div>
     </article>
 
-    @if($puedeResponderMesaControl)
-    <article class="gfd-card gfd-response-card">
-        <h3>Respuesta de Mesa de Control</h3>
-        <p>Las respuestas se gestionan desde el módulo <strong>Proceso</strong>.</p>
-        <a href="{{ route($moduloContext['procesoRoute'] ?? 'filtros.proceso', $registro['id']) }}" class="gfd-submit-btn">Abrir Proceso</a>
-    </article>
-        @elseif($esSupervisor && empty($registro['observacion_mesa_control']))
-        <article class="gfd-card gfd-response-card">
-            <p class="gfd-note">Este registro ya no está en estado pendiente para este módulo y no requiere nueva respuesta.</p>
-        </article>
+    @if($esSupervisor && isset($asesores))
+    <div style="margin: 1.5rem 0 1rem 0; background: #f0f7fc; border: 1px solid #c9e4f8; border-radius: 8px; padding: 1rem;">
+        <h4 style="margin: 0 0 0.75rem 0; color: #1f89c8; font-size: 1rem;">Gestion de visibilidad para asesores</h4>
+        @if($asesores->count() > 0)
+        <form action="{{ route('filtros.asignarAsesor', $registro['id']) }}" method="POST" id="formAsignarAsesor" style="margin-bottom: 1rem;">
+            @csrf
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end;">
+                <div style="flex: 1; min-width: 180px;">
+                    <label for="asesor_id" style="display: block; font-size: 0.85rem; font-weight: 700; color: #2f4f75; margin-bottom: 0.25rem;">Asignar a un asesor</label>
+                    <select name="asesor_id" id="asesor_id" class="crm-select" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #c8d8ea;">
+                        <option value="">-- Seleccione --</option>
+                        @foreach($asesores as $asesor)
+                            <option value="{{ $asesor->id }}" {{ ($registro['user_id'] ?? '') == $asesor->id ? 'selected' : '' }}>{{ $asesor->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="button" id="btnAsignarAsesor" class="gfd-submit-btn" style="background: linear-gradient(180deg, #2a9de0, #1779bd); border: none;">
+                    <i class="fas fa-user-check"></i> Mostrar a este asesor
+                </button>
+            </div>
+        </form>
+
+        @if(!empty($registro['user_id']))
+        <form action="{{ route('filtros.desasignarAsesor', $registro['id']) }}" method="POST" id="formDesasignarAsesor">
+            @csrf
+            <div style="border-top: 1px dashed #c9e4f8; padding-top: 0.75rem;">
+                <button type="button" id="btnDesasignarAsesor" class="gfd-back-btn" style="background: #fff3e0; border-color: #e0a800; color: #a56700;cursor:pointer;">
+                    <i class="fas fa-user-slash"></i> Quitar de este asesor (ya no lo vera)
+                </button>
+                <span class="gfd-note" style="margin-left: 0.75rem;">Actualmente asignado a: <strong>{{ $registro['asesor'] }}</strong></span>
+            </div>
+        </form>
         @endif
+        @else
+        <p class="gfd-note" style="color: #c00;">No hay asesores registrados en el sistema. No se puede asignar.</p>
+        @endif
+    </div>
+    @endif
 
     <div class="gfd-actions">
         <a href="{{ route($moduloContext['indexRoute'] ?? 'filtros.index') }}" class="gfd-back-btn">Volver al listado</a>
@@ -356,6 +399,11 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
         gap: 0.6rem;
     }
 
+    .support-files {
+        display: grid;
+        gap: 0.5rem;
+    }
+
     .support-slot {
         border: 1px solid #dbe8f5;
         border-radius: 6px;
@@ -500,4 +548,55 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
         }
     }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.getElementById('btnAsignarAsesor')?.addEventListener('click', function(e) {
+        const select = document.getElementById('asesor_id');
+        if (!select || !select.value) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Selecciona un asesor',
+                text: 'Por favor elige un asesor de la lista antes de continuar.',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+        const asesorNombre = select.options[select.selectedIndex].text;
+        Swal.fire({
+            title: '¿Asignar este filtro?',
+            html: `El asesor <strong>${asesorNombre}</strong> podra ver y gestionar este filtro.<br><br>¿Confirmas la asignacion?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Si, asignar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('formAsignarAsesor').submit();
+            }
+        });
+    });
+
+    document.getElementById('btnDesasignarAsesor')?.addEventListener('click', function(e) {
+        const asesorActual = "{{ $registro['asesor'] }}";
+        Swal.fire({
+            title: '¿Quitar este filtro del asesor?',
+            html: `El filtro dejara de ser visible para <strong>${asesorActual}</strong>.<br>Podras asignarlo nuevamente mas tarde.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Si, quitar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('formDesasignarAsesor').submit();
+            }
+        });
+    });
+</script>
+
 @endsection

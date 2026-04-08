@@ -24,7 +24,6 @@ class ClienteModuloContext
                     ['status' => 'No Viable', 'sub_status' => 'Expo Titular Color Semaforo'],
                 ],
                 'opcionesEstadoAsesor' => [
-                    ['status' => 'Preradicacion Comercial', 'sub_status' => 'Pendiente Radicar'],
                     ['status' => 'Preradicacion Comercial', 'sub_status' => 'Envio Digital Docs'],
                 ],
             ],
@@ -36,10 +35,14 @@ class ClienteModuloContext
                 'showRoute' => 'radicados.show',
                 'procesoRoute' => 'radicados.proceso',
                 'responderRoute' => 'radicados.responder',
-                'subStatusResponder' => ['Pendiente Radicar', 'Envio Digital Docs'],
+                'subStatusResponder' => ['Envio Digital Docs', 'En Analisis', 'En Comite'],
                 'opcionesEstado' => [
-                    ['status' => 'Radicado', 'sub_status' => 'Pendiente Aprobacion'],
-                    ['status' => 'No Radicado', 'sub_status' => 'No Gestionable'],
+                    ['status' => 'Aprobado', 'sub_status' => 'Aprobado'],
+                    ['status' => 'Negado', 'sub_status' => 'Cap Dcto'],
+                    ['status' => 'Negado', 'sub_status' => 'Sujeto a Reconsideracion'],
+                    ['status' => 'Negado', 'sub_status' => 'No Sujeto a Reconsideracion'],
+                    ['status' => 'En Estudio', 'sub_status' => 'En Analisis'],
+                    ['status' => 'En Estudio', 'sub_status' => 'En Comite'],
                 ],
             ],
             'aprobados' => [
@@ -50,10 +53,10 @@ class ClienteModuloContext
                 'showRoute' => 'aprobados.show',
                 'procesoRoute' => 'aprobados.proceso',
                 'responderRoute' => 'aprobados.responder',
-                'subStatusResponder' => ['Pendiente Aprobacion'],
+                'subStatusResponder' => ['Pendiente Aprobacion', 'Aprobado'],
                 'opcionesEstado' => [
-                    ['status' => 'Aprobado', 'sub_status' => 'Pendiente Desembolso'],
-                    ['status' => 'No Aprobado', 'sub_status' => 'No Gestionable'],
+                    ['status' => 'Aprobado', 'sub_status' => 'Pte desembolso'],
+                    ['status' => 'Cliente Desiste', 'sub_status' => 'No acepta condiciones'],
                 ],
             ],
             'desembolso' => [
@@ -64,10 +67,12 @@ class ClienteModuloContext
                 'showRoute' => 'desembolso.show',
                 'procesoRoute' => 'desembolso.proceso',
                 'responderRoute' => 'desembolso.responder',
-                'subStatusResponder' => ['Pendiente Desembolso'],
+                'subStatusResponder' => ['Pendiente Desembolso', 'Pte desembolso', 'fallido'],
                 'opcionesEstado' => [
-                    ['status' => 'Desembolsado', 'sub_status' => 'Desembolsado'],
-                    ['status' => 'No Desembolsado', 'sub_status' => 'No Gestionable'],
+                    ['status' => 'Contabilizacion Pendiente', 'sub_status' => 'exitoso'],
+                    ['status' => 'Contabilizacion Pendiente', 'sub_status' => 'fallido'],
+                    ['status' => 'Contabilizacion aceptada', 'sub_status' => 'exitoso'],
+                    ['status' => 'Contabilizacion aceptada', 'sub_status' => 'fallido'],
                 ],
             ],
         ];
@@ -97,9 +102,8 @@ class ClienteModuloContext
 
         if ($modulo === 'radicados') {
             $query->where(function (Builder $q) {
-                $q->whereIn('status', ['Preradicacion Comercial', 'Radicado', 'No Radicado'])
-                    ->orWhere('sub_status', 'Envio Digital Docs')
-                    ->orWhere('status', 'Envio Digital Docs');
+                $q->whereIn('status', ['Preradicacion Comercial', 'En Estudio', 'Negado', 'Radicado', 'No Radicado'])
+                    ->orWhereIn('sub_status', ['Envio Digital Docs', 'En Analisis', 'En Comite', 'Cap Dcto', 'Sujeto a Reconsideracion', 'No Sujeto a Reconsideracion']);
             });
 
             return;
@@ -107,8 +111,8 @@ class ClienteModuloContext
 
         if ($modulo === 'aprobados') {
             $query->where(function (Builder $q) {
-                $q->where('sub_status', 'Pendiente Aprobacion')
-                    ->orWhereIn('status', ['Aprobado', 'No Aprobado']);
+                $q->whereIn('sub_status', ['Pendiente Aprobacion', 'Aprobado'])
+                    ->orWhereIn('status', ['No Aprobado', 'Cliente Desiste']);
             });
 
             return;
@@ -116,8 +120,8 @@ class ClienteModuloContext
 
         if ($modulo === 'desembolso') {
             $query->where(function (Builder $q) {
-                $q->where('sub_status', 'Pendiente Desembolso')
-                    ->orWhereIn('status', ['Desembolsado', 'No Desembolsado']);
+                $q->whereIn('sub_status', ['Pendiente Desembolso', 'Pte desembolso', 'exitoso', 'fallido'])
+                    ->orWhereIn('status', ['Contabilizacion Pendiente', 'Contabilizacion aceptada', 'Desembolsado', 'No Desembolsado']);
             });
         }
     }
@@ -125,22 +129,23 @@ class ClienteModuloContext
     public static function inferFromCliente(Cliente $cliente): string
     {
         if (
-            $cliente->sub_status === 'Pendiente Desembolso'
-            || in_array((string) $cliente->status, ['Desembolsado', 'No Desembolsado'], true)
+            in_array((string) $cliente->sub_status, ['Pendiente Desembolso', 'Pte desembolso', 'exitoso', 'fallido'], true)
+            || in_array((string) $cliente->status, ['Contabilizacion Pendiente', 'Contabilizacion aceptada', 'Desembolsado', 'No Desembolsado'], true)
         ) {
             return 'desembolso';
         }
 
         if (
-            $cliente->sub_status === 'Pendiente Aprobacion'
-            || in_array((string) $cliente->status, ['Aprobado', 'No Aprobado'], true)
+            in_array((string) $cliente->sub_status, ['Pendiente Aprobacion', 'Aprobado', 'No acepta condiciones'], true)
+            || in_array((string) $cliente->status, ['Aprobado', 'No Aprobado', 'Cliente Desiste'], true)
+            || (string) $cliente->sub_status === 'Aprobado'
         ) {
             return 'aprobados';
         }
 
         if (
-            in_array((string) $cliente->status, ['Preradicacion Comercial', 'Radicado', 'No Radicado', 'Envio Digital Docs'], true)
-            || (string) $cliente->sub_status === 'Envio Digital Docs'
+            in_array((string) $cliente->status, ['Preradicacion Comercial', 'En Estudio', 'Negado', 'Radicado', 'No Radicado', 'Envio Digital Docs'], true)
+            || in_array((string) $cliente->sub_status, ['Envio Digital Docs', 'En Analisis', 'En Comite', 'Cap Dcto', 'Sujeto a Reconsideracion', 'No Sujeto a Reconsideracion'], true)
         ) {
             return 'radicados';
         }

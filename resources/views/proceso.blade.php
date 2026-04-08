@@ -13,7 +13,6 @@
     ];
 
     $opcionesEstadoAsesor = $opcionesEstadoAsesor ?? [
-        ['status' => 'Preradicacion Comercial', 'sub_status' => 'Pendiente Radicar'],
         ['status' => 'Preradicacion Comercial', 'sub_status' => 'Envio Digital Docs'],
     ];
     $catalogoStatusGeneral = $catalogoStatusGeneral ?? [];
@@ -22,8 +21,17 @@
     $esAsesor = $esAsesor ?? false;
     $puedeActualizarAsesor = $puedeActualizarAsesor ?? false;
     $puedeActualizarSupervisor = $puedeActualizarSupervisor ?? false;
+    $puedeCrearNuevoFiltroAsesor = $puedeCrearNuevoFiltroAsesor ?? false;
 
-    $statusPositivos = ['Viable', 'Preradicacion Comercial', 'Envio Digital Docs', 'Radicado', 'Aprobado', 'Desembolsado'];
+    $historialSeccionado = $historialSeccionado ?? [
+        [
+            'clave' => $moduloContext['clave'] ?? 'filtros',
+            'titulo' => $moduloContext['titulo_gestion'] ?? 'Gestion filtros',
+            'items' => $historial ?? [],
+        ],
+    ];
+
+    $statusPositivos = ['Viable', 'Preradicacion Comercial', 'Envio Digital Docs', 'Radicacion Iniciada', 'En Estudio', 'Radicado', 'Aprobado', 'Contabilizacion aceptada', 'Desembolsado'];
 @endphp
 
 @section('title', 'Proceso ' . strtolower($moduloContext['titulo'] ?? 'filtro') . ' | CRM')
@@ -85,58 +93,63 @@
 
     <article class="pro-card pro-history-card">
         <h3>Historial {{ $moduloContext['titulo'] ?? 'Filtro' }}</h3>
-        <div class="pro-table-wrap">
-            <table class="pro-table">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Status</th>
-                        <th>Sub Status</th>
-                        <th>Comentario</th>
-                        <th>Respuesta</th>
-                        <th>Soporte</th>
-                        <th>Autor</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($historial as $item)
-                        <tr>
-                            <td>{{ $item['fecha'] }}</td>
-                            <td>
-                                <span class="pro-badge {{ in_array($item['status'], $statusPositivos, true) ? 'ok' : 'warn' }}">{{ $item['status'] }}</span>
-                            </td>
-                            <td>
-                                <span class="pro-badge sub">{{ $item['sub_status'] }}</span>
-                            </td>
-                            <td>{{ $item['comentario'] }}</td>
-                            <td>
-                                <div class="pro-history-files">
-                                    @forelse(($item['respuesta_archivos'] ?? []) as $archivo)
-                                        <a href="{{ $archivo['url'] }}" target="_blank" rel="noopener" class="pro-history-file-link" title="{{ $archivo['nombre'] }}">
-                                            <i class="fas fa-cloud-download-alt"></i>
-                                        </a>
-                                    @empty
-                                        <span class="pro-history-file-empty">--</span>
-                                    @endforelse
-                                </div>
-                            </td>
-                            <td>
-                                <div class="pro-history-files">
-                                    @forelse(($item['soporte_archivos'] ?? []) as $archivo)
-                                        <a href="{{ $archivo['url'] }}" target="_blank" rel="noopener" class="pro-history-file-link" title="{{ $archivo['nombre'] }}">
-                                            <i class="fas fa-cloud-download-alt"></i>
-                                        </a>
-                                    @empty
-                                        <span class="pro-history-file-empty">--</span>
-                                    @endforelse
-                                </div>
-                            </td>
-                            <td>{{ $item['autor'] }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+        @foreach($historialSeccionado as $seccion)
+            <section class="pro-history-section">
+                <h4>{{ $seccion['titulo'] }}</h4>
+                <div class="pro-table-wrap">
+                    <table class="pro-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Status</th>
+                                <th>Sub Status</th>
+                                <th>Comentario</th>
+                                <th>Respuesta</th>
+                                <th>Soporte</th>
+                                <th>Autor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(($seccion['items'] ?? []) as $item)
+                                <tr>
+                                    <td>{{ $item['fecha'] }}</td>
+                                    <td>
+                                        <span class="pro-badge {{ in_array($item['status'], $statusPositivos, true) ? 'ok' : 'warn' }}">{{ $item['status'] }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="pro-badge sub">{{ $item['sub_status'] }}</span>
+                                    </td>
+                                    <td>{{ $item['comentario'] }}</td>
+                                    <td>
+                                        <div class="pro-history-files">
+                                            @forelse(($item['respuesta_archivos'] ?? []) as $archivo)
+                                                <a href="{{ $archivo['url'] }}" target="_blank" rel="noopener" class="pro-history-file-link" title="{{ $archivo['nombre'] }}">
+                                                    <i class="fas fa-cloud-download-alt"></i>
+                                                </a>
+                                            @empty
+                                                <span class="pro-history-file-empty">--</span>
+                                            @endforelse
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="pro-history-files">
+                                            @forelse(($item['soporte_archivos'] ?? []) as $archivo)
+                                                <a href="{{ $archivo['url'] }}" target="_blank" rel="noopener" class="pro-history-file-link" title="{{ $archivo['nombre'] }}">
+                                                    <i class="fas fa-cloud-download-alt"></i>
+                                                </a>
+                                            @empty
+                                                <span class="pro-history-file-empty">--</span>
+                                            @endforelse
+                                        </div>
+                                    </td>
+                                    <td>{{ $item['autor'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        @endforeach
     </article>
 
     <article class="pro-card pro-support-card">
@@ -355,6 +368,26 @@
         </article>
     @endif
 
+    @if($puedeCrearNuevoFiltroAsesor)
+        <article class="pro-card pro-update-card">
+            <div class="pro-update-panel">
+                <header class="pro-update-head">
+                    <h3>Nuevo Filtro Disponible</h3>
+                    <span class="pro-badge ok">Reconsideracion</span>
+                </header>
+                <p class="pro-update-help">
+                    Este cliente quedo en estado <strong>Negado</strong> con sub status <strong>{{ $registro['sub_status'] }}</strong>.
+                    Puedes crear un nuevo filtro y adjuntar nuevas evidencias para reintentar la gestion.
+                </p>
+                <div class="pro-update-actions">
+                    <a href="{{ route('registros') }}" class="pro-update-btn" style="text-decoration:none; display:inline-flex; align-items:center;">
+                        Crear nuevo filtro
+                    </a>
+                </div>
+            </div>
+        </article>
+    @endif
+
     <div class="pro-actions">
         <a href="{{ route($moduloContext['showRoute'] ?? 'filtros.show', $registro['id']) }}" class="pro-back">Volver al detalle</a>
     </div>
@@ -463,6 +496,19 @@
         margin: 0 0 0.75rem;
         color: #2f4f75;
         font-size: 1rem;
+    }
+
+    .pro-history-section + .pro-history-section {
+        margin-top: 1rem;
+        padding-top: 0.9rem;
+        border-top: 1px dashed #d7e3f2;
+    }
+
+    .pro-history-section h4 {
+        margin: 0 0 0.55rem;
+        color: #1f89c8;
+        font-size: 0.92rem;
+        font-weight: 700;
     }
 
     .pro-table-wrap {

@@ -14,7 +14,60 @@ class GestionClienteController extends Controller
 {
     use InteractsWithClienteSupports;
 
-    private function mapRegistro(Cliente $cliente): array
+    private function esEstadoRadicacionIniciada(?string $status, ?string $subStatus): bool
+    {
+        return (string) $status === 'Preradicacion Comercial'
+            && (string) $subStatus === 'Envio Digital Docs';
+    }
+
+    private function resolverEstadoVisual(string $modulo, ?string $status, ?string $subStatus): array
+    {
+        if ($modulo === 'radicados' && $this->esEstadoRadicacionIniciada($status, $subStatus)) {
+            return [
+                'status' => 'Radicacion Iniciada',
+                'sub_status' => 'Radicacion Iniciada',
+            ];
+        }
+
+        return [
+            'status' => (string) ($status ?? ''),
+            'sub_status' => (string) ($subStatus ?? ''),
+        ];
+    }
+
+    private function inferirModuloHistorial(?string $status, ?string $subStatus): string
+    {
+        $status = (string) ($status ?? '');
+        $subStatus = (string) ($subStatus ?? '');
+
+        if (
+            in_array($subStatus, ['Pendiente Desembolso', 'Pte desembolso', 'exitoso', 'fallido'], true)
+            || in_array($status, ['Contabilizacion Pendiente', 'Contabilizacion aceptada', 'Desembolsado', 'No Desembolsado'], true)
+        ) {
+            return 'desembolso';
+        }
+
+        if (
+            in_array($subStatus, ['Pendiente Aprobacion', 'Aprobado', 'No acepta condiciones'], true)
+            || in_array($status, ['Aprobado', 'No Aprobado', 'Cliente Desiste'], true)
+            || $subStatus === 'Aprobado'
+        ) {
+            return 'aprobados';
+        }
+
+        if (
+            in_array($status, ['Preradicacion Comercial', 'En Estudio', 'Negado', 'Radicado', 'No Radicado', 'Envio Digital Docs', 'Radicacion Iniciada'], true)
+            || in_array($subStatus, ['Envio Digital Docs', 'En Analisis', 'En Comite', 'Cap Dcto', 'Sujeto a Reconsideracion', 'No Sujeto a Reconsideracion', 'Radicacion Iniciada'], true)
+            || str_contains(strtolower($status), 'radicacion')
+            || str_contains(strtolower($subStatus), 'radicacion')
+        ) {
+            return 'radicados';
+        }
+
+        return 'filtros';
+    }
+
+    private function mapRegistro(Cliente $cliente, string $modulo): array
     {
         $departamentoNombre = $cliente->departamento?->nombre
             ?? $cliente->municipio?->departamento?->nombre
@@ -36,6 +89,7 @@ class GestionClienteController extends Controller
         ]));
 
         $resultadoFecha = $cliente->mesa_control_respondido_at ?? $cliente->updated_at;
+        $estadoVisual = $this->resolverEstadoVisual($modulo, $cliente->status, $cliente->sub_status);
 
         return [
             'id' => (string) $cliente->id,
@@ -51,8 +105,9 @@ class GestionClienteController extends Controller
             'empresa' => $cliente->empresa,
             'monto' => '$ ' . $cliente->monto_filtrado,
             'plazo' => (string) $cliente->plazo,
-            'status' => $cliente->status,
-            'sub_status' => $cliente->sub_status,
+            'status' => $estadoVisual['status'],
+            'sub_status' => $estadoVisual['sub_status'],
+             'user_id' => $cliente->user_id,
             'asesor' => strtoupper($cliente->user?->name ?? 'ASESOR FREELANCE'),
             'mesa_control' => strtoupper($cliente->mesaControlUser?->name ?? 'MESA DE CONTROL'),
             'ciudad' => $cliente->municipio?->nombre ?? '',
@@ -144,8 +199,8 @@ class GestionClienteController extends Controller
         $registros = $this->construirQueryModulo($request, $modulo)
             ->latest()
             ->get()
-            ->map(function (Cliente $cliente) {
-                return $this->mapRegistro($cliente);
+            ->map(function (Cliente $cliente) use ($modulo) {
+                return $this->mapRegistro($cliente, $modulo);
             });
 
         $vistaPorModulo = [
@@ -165,7 +220,7 @@ class GestionClienteController extends Controller
         $cliente = Cliente::with(['user', 'mesaControlUser', 'municipio.departamento', 'departamento'])->findOrFail($id);
         $this->validarAccesoFiltro($cliente, $request);
 
-        $registro = $this->mapRegistro($cliente);
+        $registro = $this->mapRegistro($cliente, $modulo);
         $soportesMesaControlSlots = $this->soporteSlots(
             $cliente->mesa_soporte_1,
             $cliente->mesa_soporte_2,
@@ -177,12 +232,16 @@ class GestionClienteController extends Controller
 
         $opcionesEstado = $moduloContext['opcionesEstado'];
 
+            $asesores = \App\Models\User::where('role', 'asesor')->get(['id', 'name']);
+
+
         return view('gestion_filtros_detalle', compact(
             'registro',
             'puedeResponderMesaControl',
             'soportesMesaControlSlots',
             'moduloContext',
-            'opcionesEstado'
+            'opcionesEstado',
+             'asesores' 
         ));
     }
 
@@ -193,7 +252,7 @@ class GestionClienteController extends Controller
     $cliente = Cliente::with(['user', 'mesaControlUser', 'municipio.departamento', 'departamento'])->findOrFail($id);
     $this->validarAccesoFiltro($cliente, $request);
 
-    $registro = $this->mapRegistro($cliente);
+    $registro = $this->mapRegistro($cliente, $modulo);
 
     $soportesAsesorHistorial = array_values(array_filter([
         $this->soporteMeta($cliente->soporte_1),
@@ -224,6 +283,7 @@ class GestionClienteController extends Controller
             'respuesta_archivos' => [],
             'soporte_archivos' => $soportesAsesorHistorial,
             'autor' => strtoupper($cliente->user?->name ?? 'ASESOR FREELANCE'),
+            'modulo_historial' => 'filtros',
             'orden' => $cliente->created_at?->timestamp ?? 0,
         ],
     ];
@@ -241,21 +301,35 @@ class GestionClienteController extends Controller
             && $fechaTransicion
             && abs($fechaTransicion->diffInSeconds($cliente->mesa_control_respondido_at, false)) <= 1;
 
+        $estadoVisualTransicion = $this->resolverEstadoVisual($modulo, $statusTransicion, $subStatusTransicion);
+        $esRadicacionIniciada = $modulo === 'radicados'
+            && $this->esEstadoRadicacionIniciada($statusTransicion, $subStatusTransicion);
+
+        $comentarioTransicion = $esMesaControlActual
+            ? ($cliente->observacion_mesa_control ?: '-')
+            : ($esRadicacionIniciada ? ($cliente->observaciones ?: '-') : '-');
+
+        $respuestaArchivosTransicion = $esMesaControlActual ? $soportesMesaHistorial : [];
+        $soporteArchivosTransicion = $esRadicacionIniciada ? $soportesAsesorHistorial : [];
+        $moduloHistorial = $this->inferirModuloHistorial($statusTransicion, $subStatusTransicion);
+
         $historial[] = [
             'fecha' => $fechaTransicion?->format('d/M Y | g:i a') ?? '',
-            'status' => $statusTransicion !== '' ? $statusTransicion : '-',
-            'sub_status' => $subStatusTransicion !== '' ? $subStatusTransicion : '-',
-            'comentario' => $esMesaControlActual ? ($cliente->observacion_mesa_control ?: '-') : '-',
-            'respuesta_archivos' => $esMesaControlActual ? $soportesMesaHistorial : [],
-            'soporte_archivos' => [],
+            'status' => $estadoVisualTransicion['status'] !== '' ? $estadoVisualTransicion['status'] : '-',
+            'sub_status' => $estadoVisualTransicion['sub_status'] !== '' ? $estadoVisualTransicion['sub_status'] : '-',
+            'comentario' => $comentarioTransicion,
+            'respuesta_archivos' => $respuestaArchivosTransicion,
+            'soporte_archivos' => $soporteArchivosTransicion,
             'autor' => strtoupper($transicion->actor?->name ?? 'USUARIO CRM'),
+            'modulo_historial' => $moduloHistorial,
             'orden' => $fechaTransicion?->timestamp ?? 0,
         ];
     }
 
     $ultimaEntrada = collect($historial)->sortBy('orden')->last();
-    $statusActualCliente = (string) ($cliente->status ?? '');
-    $subStatusActualCliente = (string) ($cliente->sub_status ?? '');
+    $estadoVisualActual = $this->resolverEstadoVisual($modulo, $cliente->status, $cliente->sub_status);
+    $statusActualCliente = $estadoVisualActual['status'];
+    $subStatusActualCliente = $estadoVisualActual['sub_status'];
 
     if (
         $statusActualCliente !== ''
@@ -266,6 +340,7 @@ class GestionClienteController extends Controller
         )
     ) {
         $autorActual = strtoupper($cliente->mesaControlUser?->name ?? $cliente->user?->name ?? 'USUARIO CRM');
+        $moduloHistorialActual = $this->inferirModuloHistorial($cliente->status, $cliente->sub_status);
 
         $historial[] = [
             'fecha' => $cliente->updated_at?->format('d/M Y | g:i a') ?? '',
@@ -275,6 +350,7 @@ class GestionClienteController extends Controller
             'respuesta_archivos' => [],
             'soporte_archivos' => $soportesAsesorHistorial,
             'autor' => $autorActual,
+            'modulo_historial' => $moduloHistorialActual,
             'orden' => $cliente->updated_at?->timestamp ?? 0,
         ];
     }
@@ -283,14 +359,23 @@ class GestionClienteController extends Controller
         $transicionesEstado->isEmpty()
         && ((string) $cliente->status !== 'Inicia Filtro' || (string) $cliente->sub_status !== 'Inicia Filtro')
     ) {
+        $esRadicacionIniciadaActual = $modulo === 'radicados'
+            && $this->esEstadoRadicacionIniciada($cliente->status, $cliente->sub_status);
+        $moduloHistorialActual = $this->inferirModuloHistorial($cliente->status, $cliente->sub_status);
+
         $historial[] = [
             'fecha' => $cliente->updated_at?->format('d/M Y | g:i a') ?? '',
-            'status' => (string) $cliente->status,
-            'sub_status' => (string) $cliente->sub_status,
-            'comentario' => $cliente->observacion_mesa_control ?: '-',
-            'respuesta_archivos' => $soportesMesaHistorial,
-            'soporte_archivos' => [],
-            'autor' => strtoupper($cliente->mesaControlUser?->name ?? 'USUARIO CRM'),
+            'status' => $statusActualCliente,
+            'sub_status' => $subStatusActualCliente,
+            'comentario' => $esRadicacionIniciadaActual
+                ? ($cliente->observaciones ?: '-')
+                : ($cliente->observacion_mesa_control ?: '-'),
+            'respuesta_archivos' => $esRadicacionIniciadaActual ? [] : $soportesMesaHistorial,
+            'soporte_archivos' => $esRadicacionIniciadaActual ? $soportesAsesorHistorial : [],
+            'autor' => strtoupper($esRadicacionIniciadaActual
+                ? ($cliente->user?->name ?? 'ASESOR FREELANCE')
+                : ($cliente->mesaControlUser?->name ?? 'USUARIO CRM')),
+            'modulo_historial' => $moduloHistorialActual,
             'orden' => $cliente->updated_at?->timestamp ?? 0,
         ];
     }
@@ -298,6 +383,43 @@ class GestionClienteController extends Controller
     usort($historial, function (array $a, array $b): int {
         return ($b['orden'] ?? 0) <=> ($a['orden'] ?? 0);
     });
+
+    $contextosModulos = ClienteModuloContext::all();
+    $ordenModulos = ['desembolso', 'aprobados', 'radicados', 'filtros'];
+    $historialAgrupado = collect($historial)->groupBy('modulo_historial');
+    $historialSeccionado = [];
+
+    foreach ($ordenModulos as $claveModulo) {
+        $itemsModulo = $historialAgrupado->get($claveModulo, collect());
+
+        if ($itemsModulo->isEmpty()) {
+            continue;
+        }
+
+        $historialSeccionado[] = [
+            'clave' => $claveModulo,
+            'titulo' => $contextosModulos[$claveModulo]['titulo_gestion'] ?? ucfirst($claveModulo),
+            'items' => $itemsModulo->values()->all(),
+        ];
+    }
+
+    $modulosExtras = $historialAgrupado->keys()->reject(function ($claveModulo) use ($ordenModulos) {
+        return in_array((string) $claveModulo, $ordenModulos, true);
+    });
+
+    foreach ($modulosExtras as $claveModulo) {
+        $itemsModulo = $historialAgrupado->get($claveModulo, collect());
+
+        if ($itemsModulo->isEmpty()) {
+            continue;
+        }
+
+        $historialSeccionado[] = [
+            'clave' => (string) $claveModulo,
+            'titulo' => ucfirst((string) $claveModulo),
+            'items' => $itemsModulo->values()->all(),
+        ];
+    }
 
     $soportesCreacionSlots = [
         [
@@ -336,12 +458,15 @@ class GestionClienteController extends Controller
         && (string) $cliente->status === 'Viable'
         && (string) $cliente->sub_status === 'Pendiente Radicar';
 
+    $puedeCrearNuevoFiltroAsesor = $esAsesor
+        && $modulo === 'radicados'
+        && (string) $cliente->status === 'Negado'
+        && in_array((string) $cliente->sub_status, ['Cap Dcto', 'Sujeto a Reconsideracion'], true);
+
     $opcionesEstado = $moduloContext['opcionesEstado'] ?? [];
 
     $filtrosContext = ClienteModuloContext::get('filtros');
     $opcionesEstadoAsesor = $filtrosContext['opcionesEstadoAsesor'] ?? [];
-
-    $contextosModulos = ClienteModuloContext::all();
 
     $opcionesGlobales = collect($contextosModulos)->flatMap(function (array $contexto) {
         return array_merge(
@@ -370,6 +495,7 @@ class GestionClienteController extends Controller
     return view('proceso', compact(
         'registro',
         'historial',
+        'historialSeccionado',
         'soportesCreacionSlots',
         'moduloContext',
         'opcionesEstado',
@@ -379,7 +505,8 @@ class GestionClienteController extends Controller
         'mostrarPanelAsesor',
         'esAsesor',
         'puedeActualizarAsesor',
-        'puedeActualizarSupervisor'
+        'puedeActualizarSupervisor',
+        'puedeCrearNuevoFiltroAsesor'
     ));
 }
 
@@ -523,6 +650,17 @@ class GestionClienteController extends Controller
             ])->withInput();
         }
 
+        if (
+            $modulo === 'radicados'
+            && (string) $data['status'] === 'En Estudio'
+            && (string) $data['sub_status'] === 'En Comite'
+            && ! ((string) $cliente->status === 'En Estudio' && (string) $cliente->sub_status === 'En Analisis')
+        ) {
+            return back()->withErrors([
+                'sub_status' => 'Para pasar a En Comite, primero debes registrar En Estudio / En Analisis.',
+            ])->withInput();
+        }
+
         $mesaSoporte1 = $this->storeSupportFile($request, 'mesa_soporte_1', 'soportes_mesa_control')
             ?? $cliente->mesa_soporte_1;
 
@@ -639,4 +777,38 @@ class GestionClienteController extends Controller
     {
         return $this->responderModulo($request, 'desembolso', $id);
     }
+
+
+    public function asignarAsesor(Request $request, string $id)
+{
+    // Solo supervisores pueden asignar
+    if (! $request->user()?->isSupervisor()) {
+        abort(403, 'Solo supervisores pueden reasignar filtros.');
+    }
+
+    $request->validate([
+        'asesor_id' => 'required|exists:users,id',
+    ]);
+
+    $cliente = Cliente::findOrFail($id);
+    $cliente->user_id = $request->asesor_id;
+    $cliente->save();
+
+    // Opcional: registrar notificación o log
+    return back()->with('success', 'Filtro asignado exitosamente al asesor.');
+}
+
+public function desasignarAsesor(Request $request, string $id)
+{
+    // Solo supervisores pueden desasignar
+    if (! $request->user()?->isSupervisor()) {
+        abort(403, 'Solo supervisores pueden quitar la asignación de un filtro.');
+    }
+
+    $cliente = Cliente::findOrFail($id);
+    $cliente->user_id = null;
+    $cliente->save();
+
+    return back()->with('success', 'El filtro ya no está asignado a ningún asesor. El asesor ya no lo verá en su listado.');
+}
 }

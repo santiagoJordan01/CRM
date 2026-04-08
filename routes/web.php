@@ -82,9 +82,19 @@ Route::middleware('auth')->group(function () {
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
-    })->name('logout'); 
+    })->name('logout');
 });
 
 
 // routes/web.php
 Route::get('/municipios/{departamentoId}', [RegistroClienteController::class, 'getMunicipios'])->name('municipios.get');
+
+
+// Boton para que el asesor pueda visualizar los clientes o nuevos filtros creados por el supervisor, y pueda dar respuesta a los mismos.   
+Route::post('/filtros/{id}/asignar-asesor', [GestionClienteController::class, 'asignarAsesor'])
+    ->name('filtros.asignarAsesor')
+    ->middleware('auth');
+Route::post('/filtros/{id}/desasignar-asesor', [GestionClienteController::class, 'desasignarAsesor'])
+    ->name('filtros.desasignarAsesor')
+    ->middleware('auth');
+    
