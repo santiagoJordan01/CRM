@@ -94,6 +94,7 @@
                     @if($puedeCrearFiltro)
                         <a href="{{ route('registros') }}" class="mini-link">Crear nuevo filtro</a>
                     @endif
+                    <a href="{{ route('ajustes.index') }}" class="mini-link">Ajustes</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="logout-mini">Cerrar sesion</button>

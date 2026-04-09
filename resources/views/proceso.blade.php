@@ -107,6 +107,9 @@
                                 <th>Respuesta</th>
                                 <th>Soporte</th>
                                 <th>Autor</th>
+                                @if($puedeActualizarSupervisor)
+                                    <th>Editar</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -143,6 +146,29 @@
                                         </div>
                                     </td>
                                     <td>{{ $item['autor'] }}</td>
+                                    @if($puedeActualizarSupervisor)
+                                        <td class="pro-edit-cell">
+                                            @if(($item['editable'] ?? false) && !empty($item['notificacion_id']))
+                                                <button
+                                                    type="button"
+                                                    class="pro-row-edit-btn"
+                                                    data-notificacion-id="{{ $item['notificacion_id'] }}"
+                                                    data-status="{{ $item['status'] }}"
+                                                    data-sub-status="{{ $item['sub_status'] }}"
+                                                    data-comentario="{{ e((string) ($item['comentario'] ?? '')) }}"
+                                                    title="Editar esta fila del historial"
+                                                >
+                                                    <i class="fas fa-pen"></i>
+                                                    Editar
+                                                </button>
+                                            @else
+                                                <button type="button" class="pro-row-edit-btn is-disabled" disabled title="Esta fila no es editable">
+                                                    <i class="fas fa-ban"></i>
+                                                    Editar
+                                                </button>
+                                            @endif
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>
@@ -190,8 +216,9 @@
                     <span class="pro-badge sub">{{ $subStatusActual }}</span>
                 </header>
 
-                <form class="pro-update-form" action="{{ route($moduloContext['responderRoute'] ?? 'filtros.responder', $registro['id']) }}" method="POST" enctype="multipart/form-data">
+                <form id="pro-update-form-supervisor" class="pro-update-form" action="{{ route($moduloContext['responderRoute'] ?? 'filtros.responder', $registro['id']) }}" method="POST" enctype="multipart/form-data">
                     @csrf
+                    <input type="hidden" id="pro_edit_notificacion_id" name="edit_notificacion_id" value="">
 
                     <div class="pro-update-field">
                         <label for="pro_status_supervisor">Status:</label>
@@ -246,8 +273,39 @@
                         <textarea id="pro_observacion_mesa_control" name="observacion_mesa_control" rows="4" required placeholder="Ingresa observaciones de Mesa de Control">{{ old('observacion_mesa_control') }}</textarea>
                     </div>
 
+                    <div class="pro-update-field">
+                        <label for="pro_tasa_ea">Tasa EA:</label>
+                        <input id="pro_tasa_ea" name="tasa_ea" type="text" value="{{ old('tasa_ea', $registro['tasa_ea'] ?? '') }}" placeholder="Ej: 24.5%" />
+                    </div>
+
+                    <div class="pro-update-field">
+                        <label for="pro_numero_credito">Numero de credito:</label>
+                        <input id="pro_numero_credito" name="numero_credito" type="text" value="{{ old('numero_credito', $registro['numero_credito'] ?? '') }}" placeholder="Ej: 123456" />
+                    </div>
+
+                    <div class="pro-update-field">
+                        <label for="pro_oficina_radicacion">Oficina de radicacion:</label>
+                        <input id="pro_oficina_radicacion" name="oficina_radicacion" type="text" value="{{ old('oficina_radicacion', $registro['oficina_radicacion'] ?? '') }}" placeholder="Ej: 2007 OF PREMIUM" />
+                    </div>
+
+                    <div class="pro-update-field">
+                        <label for="pro_financiera_1">Financiera 1:</label>
+                        <input id="pro_financiera_1" name="financiera_1" type="text" value="{{ old('financiera_1', $registro['financiera_1'] ?? '') }}" placeholder="Opcional" />
+                    </div>
+
+                    <div class="pro-update-field">
+                        <label for="pro_financiera_2">Financiera 2:</label>
+                        <input id="pro_financiera_2" name="financiera_2" type="text" value="{{ old('financiera_2', $registro['financiera_2'] ?? '') }}" placeholder="Opcional" />
+                    </div>
+
+                    <div class="pro-update-field">
+                        <label for="pro_financiera_3">Financiera 3:</label>
+                        <input id="pro_financiera_3" name="financiera_3" type="text" value="{{ old('financiera_3', $registro['financiera_3'] ?? '') }}" placeholder="Opcional" />
+                    </div>
+
                     <div class="pro-update-actions">
                         <button type="submit" class="pro-update-btn">Guardar respuesta</button>
+                        <button type="button" id="pro-cancel-edit" class="pro-update-btn pro-update-btn-cancel" style="display:none; margin-left: 0.45rem;">Cancelar edicion</button>
                     </div>
                 </form>
             </div>
@@ -560,6 +618,36 @@
         font-size: 0.78rem;
     }
 
+    .pro-edit-cell {
+        white-space: nowrap;
+    }
+
+    .pro-row-edit-btn {
+        border: 1px solid #c5d6ea;
+        background: #f4f9ff;
+        color: #2e5f8d;
+        border-radius: 5px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        padding: 0.25rem 0.45rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .pro-row-edit-btn:hover {
+        background: #e6f2ff;
+    }
+
+    .pro-row-edit-btn.is-disabled,
+    .pro-row-edit-btn:disabled {
+        background: #f3f6fa;
+        color: #9aabc0;
+        border-color: #d9e2ec;
+        cursor: not-allowed;
+    }
+
     .pro-badge {
         display: inline-block;
         border-radius: 4px;
@@ -763,6 +851,14 @@
         filter: brightness(0.94);
     }
 
+    .pro-update-btn.pro-update-btn-cancel {
+        background: #7f8fa4;
+    }
+
+    .pro-update-btn.pro-update-btn-cancel:hover {
+        filter: brightness(0.96);
+    }
+
     .pro-update-btn:disabled {
         background: #8ca3bb;
         cursor: not-allowed;
@@ -816,5 +912,110 @@
     }
 
  
+</style>
+
+<script>
+    (function () {
+        const editButtons = document.querySelectorAll('.pro-row-edit-btn');
+        const form = document.getElementById('pro-update-form-supervisor');
+        const statusField = document.getElementById('pro_status_supervisor');
+        const subStatusField = document.getElementById('pro_sub_status_supervisor');
+        const commentField = document.getElementById('pro_observacion_mesa_control');
+        const editIdField = document.getElementById('pro_edit_notificacion_id');
+        const cancelEditBtn = document.getElementById('pro-cancel-edit');
+        const submitBtn = form?.querySelector('button[type="submit"]');
+        const submitBtnBaseText = submitBtn ? submitBtn.textContent : '';
+
+        if (!editButtons.length || !form || !statusField || !subStatusField || !commentField || !editIdField) {
+            return;
+        }
+
+        function setSelectValue(select, value) {
+            const exists = Array.from(select.options).some(function (opt) {
+                return opt.value === value;
+            });
+
+            if (!value) {
+                return false;
+            }
+
+            if (!exists) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            }
+
+            select.value = value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+
+            return true;
+        }
+
+        function clearEditMode() {
+            editIdField.value = '';
+            if (submitBtn) {
+                submitBtn.textContent = submitBtnBaseText || 'Guardar respuesta';
+            }
+
+            if (cancelEditBtn) {
+                cancelEditBtn.style.display = 'none';
+            }
+        }
+
+        clearEditMode();
+
+        editButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (button.disabled) {
+                    return;
+                }
+
+                const notificacionId = button.dataset.notificacionId || '';
+                const status = button.dataset.status || '';
+                const subStatus = button.dataset.subStatus || '';
+                const comentario = button.dataset.comentario || '';
+
+                if (!notificacionId) {
+                    return;
+                }
+
+                editIdField.value = notificacionId;
+
+                setSelectValue(statusField, status);
+                setSelectValue(subStatusField, subStatus);
+
+                if (comentario !== '-' && comentario.trim() !== '') {
+                    commentField.value = comentario;
+                }
+
+                if (submitBtn) {
+                    submitBtn.textContent = 'Guardar correccion de fila';
+                }
+
+                if (cancelEditBtn) {
+                    cancelEditBtn.style.display = 'inline-flex';
+                }
+
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                form.classList.add('pro-form-highlight');
+                setTimeout(function () {
+                    form.classList.remove('pro-form-highlight');
+                }, 1200);
+            });
+        });
+
+        cancelEditBtn?.addEventListener('click', function () {
+            clearEditMode();
+        });
+    })();
+</script>
+
+<style>
+    .pro-form-highlight {
+        box-shadow: 0 0 0 3px rgba(31, 137, 200, 0.18);
+        border-radius: 6px;
+        transition: box-shadow 0.2s ease;
+    }
 </style>
 @endsection

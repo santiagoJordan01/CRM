@@ -130,7 +130,7 @@
             border-radius: 16px;
             padding: 24px;
             box-shadow: 0 16px 28px rgba(24, 40, 72, 0.05);
-            max-width: 980px;
+            max-width: 100%;
         }
 
         .card h1 {

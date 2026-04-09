@@ -4,6 +4,7 @@ use App\Http\Controllers\GestionClienteController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\RegistroClienteController;
+use App\Http\Controllers\AjustesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,22 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
     Route::get('/notificaciones/{id}/abrir', [NotificacionController::class, 'abrir'])->name('notifications.open');
+    Route::get('/ajustes', [AjustesController::class, 'index'])->name('ajustes.index');
+    Route::post('/ajustes/users', [AjustesController::class, 'storeUser'])
+        ->name('ajustes.users.store')
+        ->middleware('role:admin');
+    Route::post('/ajustes/users/{id}/role', [AjustesController::class, 'updateRole'])
+        ->name('ajustes.users.role')
+        ->middleware('role:admin');
+    Route::post('/ajustes/users/{id}/reset-password', [AjustesController::class, 'resetPassword'])
+        ->name('ajustes.users.reset')
+        ->middleware('role:admin');
+    Route::post('/ajustes/users/{id}/send-reset', [AjustesController::class, 'sendResetLink'])
+        ->name('ajustes.users.send_reset')
+        ->middleware('role:admin');
+    Route::delete('/ajustes/users/{id}', [AjustesController::class, 'destroy'])
+        ->name('ajustes.users.destroy')
+        ->middleware('role:admin');
 
     Route::middleware('role:asesor,supervisor')->group(function () {
         Route::get('/registros', [RegistroClienteController::class, 'create'])->name('registros');
@@ -52,28 +69,28 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:asesor')
         ->name('filtros.asesor.update');
     Route::post('/gestion-filtros/{id}/respuesta-mesa-control', [GestionClienteController::class, 'filtrosResponderMesaControl'])
-        ->middleware('role:supervisor')
+        ->middleware('role:supervisor,admin')
         ->name('filtros.responder');
 
     Route::get('/gestion-radicados', [GestionClienteController::class, 'radicadosIndex'])->name('radicados.index');
     Route::get('/gestion-radicados/{id}/proceso', [GestionClienteController::class, 'radicadosProceso'])->name('radicados.proceso');
     Route::get('/gestion-radicados/{id}', [GestionClienteController::class, 'radicadosShow'])->name('radicados.show');
     Route::post('/gestion-radicados/{id}/respuesta-mesa-control', [GestionClienteController::class, 'radicadosResponderMesaControl'])
-        ->middleware('role:supervisor')
+        ->middleware('role:supervisor,admin')
         ->name('radicados.responder');
 
     Route::get('/gestion-aprobados', [GestionClienteController::class, 'aprobadosIndex'])->name('aprobados.index');
     Route::get('/gestion-aprobados/{id}/proceso', [GestionClienteController::class, 'aprobadosProceso'])->name('aprobados.proceso');
     Route::get('/gestion-aprobados/{id}', [GestionClienteController::class, 'aprobadosShow'])->name('aprobados.show');
     Route::post('/gestion-aprobados/{id}/respuesta-mesa-control', [GestionClienteController::class, 'aprobadosResponderMesaControl'])
-        ->middleware('role:supervisor')
+        ->middleware('role:supervisor,admin')
         ->name('aprobados.responder');
 
     Route::get('/gestion-desembolso', [GestionClienteController::class, 'desembolsoIndex'])->name('desembolso.index');
     Route::get('/gestion-desembolso/{id}/proceso', [GestionClienteController::class, 'desembolsoProceso'])->name('desembolso.proceso');
     Route::get('/gestion-desembolso/{id}', [GestionClienteController::class, 'desembolsoShow'])->name('desembolso.show');
     Route::post('/gestion-desembolso/{id}/respuesta-mesa-control', [GestionClienteController::class, 'desembolsoResponderMesaControl'])
-        ->middleware('role:supervisor')
+        ->middleware('role:supervisor,admin')
         ->name('desembolso.responder');
 
     Route::post('/logout', function (Request $request) {

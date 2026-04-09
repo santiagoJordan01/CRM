@@ -96,6 +96,7 @@ class GestionClienteController extends Controller
             'fecha' => $cliente->created_at?->format('d/M Y g:i a') ?? '',
             'modificacion' => $cliente->updated_at?->format('d/M Y g:i a') ?? '',
             'gestion' => '+' . ($cliente->created_at?->diffInDays(now()) ?? 0) . ' d',
+            'banco' => $cliente->campania,
             'campania' => $cliente->campania,
             'producto' => $cliente->producto,
             'canal' => $cliente->canal,
@@ -103,8 +104,27 @@ class GestionClienteController extends Controller
             'nombre' => $cliente->nombre_cliente,
             'perfil' => $cliente->perfil,
             'empresa' => $cliente->empresa,
+            'genero' => $cliente->genero,
+            'email' => $cliente->email,
+            'fecha_nacimiento' => $cliente->fecha_nacimiento?->format('Y-m-d') ?? '',
+            'fecha_vinculacion' => $cliente->fecha_vinculacion?->format('Y-m-d') ?? '',
+            'destino' => $cliente->destino,
+            'tipo_cliente' => $cliente->tipo_cliente,
+            'sector' => $cliente->sector,
+            'nit_empresa' => $cliente->nit_empresa,
+            'tipo_contrato' => $cliente->tipo_contrato,
             'monto' => '$ ' . $cliente->monto_filtrado,
             'plazo' => (string) $cliente->plazo,
+            'monto_filtrado' => '$ ' . $cliente->monto_filtrado,
+            'celular' => $cliente->celular_cliente,
+            'ingreso_principal' => '$ ' . $cliente->ingreso_principal,
+            'otros_ingresos' => '$ ' . $cliente->otros_ingresos,
+            'tasa_ea' => (string) ($cliente->tasa_ea ?? ''),
+            'numero_credito' => (string) ($cliente->numero_credito ?? ''),
+            'oficina_radicacion' => (string) ($cliente->oficina_radicacion ?? ''),
+            'financiera_1' => (string) ($cliente->financiera_1 ?? ''),
+            'financiera_2' => (string) ($cliente->financiera_2 ?? ''),
+            'financiera_3' => (string) ($cliente->financiera_3 ?? ''),
             'status' => $estadoVisual['status'],
             'sub_status' => $estadoVisual['sub_status'],
              'user_id' => $cliente->user_id,
@@ -187,6 +207,63 @@ class GestionClienteController extends Controller
             }
         }
 
+        if ($request->filled('fecha_desde')) {
+            try {
+                $fechaDesde = Carbon::parse($request->string('fecha_desde')->toString())->toDateString();
+                $query->whereDate('created_at', '>=', $fechaDesde);
+            } catch (\Throwable $e) {
+                // Si la fecha no tiene formato valido, se ignora el filtro.
+            }
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            try {
+                $fechaHasta = Carbon::parse($request->string('fecha_hasta')->toString())->toDateString();
+                $query->whereDate('created_at', '<=', $fechaHasta);
+            } catch (\Throwable $e) {
+                // Si la fecha no tiene formato valido, se ignora el filtro.
+            }
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->string('status')->toString();
+
+            if ($status === 'Radicacion Iniciada') {
+                $query->where('status', 'Preradicacion Comercial')
+                    ->where('sub_status', 'Envio Digital Docs');
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        if ($request->filled('sub_status')) {
+            $subStatus = $request->string('sub_status')->toString();
+
+            if ($subStatus === 'Radicacion Iniciada') {
+                $query->where('status', 'Preradicacion Comercial')
+                    ->where('sub_status', 'Envio Digital Docs');
+            } else {
+                $query->where('sub_status', $subStatus);
+            }
+        }
+
+        if ($request->filled('q')) {
+            $termino = trim($request->string('q')->toString());
+
+            $query->where(function ($q) use ($termino) {
+                $q->where('nombre_cliente', 'like', "%{$termino}%")
+                    ->orWhere('cedula', 'like', "%{$termino}%")
+                    ->orWhere('empresa', 'like', "%{$termino}%")
+                    ->orWhere('campania', 'like', "%{$termino}%")
+                    ->orWhere('producto', 'like', "%{$termino}%")
+                    ->orWhere('canal', 'like', "%{$termino}%");
+
+                if (is_numeric($termino)) {
+                    $q->orWhere('id', (int) $termino);
+                }
+            });
+        }
+
         ClienteModuloContext::applyFilter($query, $modulo);
 
         return $query;
@@ -227,7 +304,7 @@ class GestionClienteController extends Controller
             $cliente->mesa_soporte_3
         );
 
-        $puedeResponderMesaControl = $request->user()?->isSupervisor()
+        $puedeResponderMesaControl = $request->user()?->isSupervisorOrAdmin()
             && in_array((string) $cliente->sub_status, $moduloContext['subStatusResponder'], true);
 
         $opcionesEstado = $moduloContext['opcionesEstado'];
@@ -284,6 +361,8 @@ class GestionClienteController extends Controller
             'soporte_archivos' => $soportesAsesorHistorial,
             'autor' => strtoupper($cliente->user?->name ?? 'ASESOR FREELANCE'),
             'modulo_historial' => 'filtros',
+            'notificacion_id' => null,
+            'editable' => false,
             'orden' => $cliente->created_at?->timestamp ?? 0,
         ],
     ];
@@ -322,6 +401,8 @@ class GestionClienteController extends Controller
             'soporte_archivos' => $soporteArchivosTransicion,
             'autor' => strtoupper($transicion->actor?->name ?? 'USUARIO CRM'),
             'modulo_historial' => $moduloHistorial,
+            'notificacion_id' => (int) $transicion->id,
+            'editable' => true,
             'orden' => $fechaTransicion?->timestamp ?? 0,
         ];
     }
@@ -351,6 +432,8 @@ class GestionClienteController extends Controller
             'soporte_archivos' => $soportesAsesorHistorial,
             'autor' => $autorActual,
             'modulo_historial' => $moduloHistorialActual,
+            'notificacion_id' => null,
+            'editable' => false,
             'orden' => $cliente->updated_at?->timestamp ?? 0,
         ];
     }
@@ -376,6 +459,8 @@ class GestionClienteController extends Controller
                 ? ($cliente->user?->name ?? 'ASESOR FREELANCE')
                 : ($cliente->mesaControlUser?->name ?? 'USUARIO CRM')),
             'modulo_historial' => $moduloHistorialActual,
+            'notificacion_id' => null,
+            'editable' => false,
             'orden' => $cliente->updated_at?->timestamp ?? 0,
         ];
     }
@@ -450,7 +535,7 @@ class GestionClienteController extends Controller
 
     $user = $request->user();
 
-    $puedeActualizarSupervisor = $user?->isSupervisor() === true;
+    $puedeActualizarSupervisor = $user?->isSupervisorOrAdmin() === true;
     $esAsesor = $user?->isAsesor() === true;
 
     $puedeActualizarAsesor = $esAsesor
@@ -617,40 +702,77 @@ class GestionClienteController extends Controller
         $subStatusAnterior = $cliente->sub_status;
 
         $opcionesEstado = collect($moduloContext['opcionesEstado']);
+        $editandoHistorial = $request->filled('edit_notificacion_id');
 
-        $estadosPermitidos = $opcionesEstado
-            ->pluck('status')
-            ->unique()
-            ->values()
-            ->all();
+        if ($editandoHistorial) {
+            $contextos = ClienteModuloContext::all();
 
-        $subEstadosPermitidos = $opcionesEstado
-            ->pluck('sub_status')
-            ->unique()
-            ->values()
-            ->all();
+            $opcionesGlobales = collect($contextos)->flatMap(function (array $contexto) {
+                return array_merge(
+                    $contexto['opcionesEstado'] ?? [],
+                    $contexto['opcionesEstadoAsesor'] ?? []
+                );
+            });
+
+            $estadosPermitidos = collect(['Inicia Filtro'])
+                ->merge($opcionesGlobales->pluck('status'))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $subEstadosPermitidos = collect(['Inicia Filtro'])
+                ->merge($opcionesGlobales->pluck('sub_status'))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        } else {
+            $estadosPermitidos = $opcionesEstado
+                ->pluck('status')
+                ->unique()
+                ->values()
+                ->all();
+
+            $subEstadosPermitidos = $opcionesEstado
+                ->pluck('sub_status')
+                ->unique()
+                ->values()
+                ->all();
+        }
 
         $data = $request->validate([
             'status' => ['required', Rule::in($estadosPermitidos)],
             'sub_status' => ['required', Rule::in($subEstadosPermitidos)],
+            'edit_notificacion_id' => 'nullable|integer|exists:cliente_notificaciones,id',
             'observacion_mesa_control' => 'required|string|max:2000',
+            'tasa_ea' => 'nullable|string|max:60',
+            'numero_credito' => 'nullable|string|max:120',
+            'oficina_radicacion' => 'nullable|string|max:255',
+            'financiera_1' => 'nullable|string|max:255',
+            'financiera_2' => 'nullable|string|max:255',
+            'financiera_3' => 'nullable|string|max:255',
             'mesa_soporte_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
             'mesa_soporte_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
             'mesa_soporte_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,mp3,wav,ogg,m4a,mp4,mov,avi,mkv,webm|max:20480',
         ]);
 
-        $combinacionValida = $opcionesEstado->contains(function (array $opcion) use ($data): bool {
-            return (string) $opcion['status'] === (string) $data['status']
-                && (string) $opcion['sub_status'] === (string) $data['sub_status'];
-        });
+        if (! $editandoHistorial) {
+            $combinacionValida = $opcionesEstado->contains(function (array $opcion) use ($data): bool {
+                return (string) $opcion['status'] === (string) $data['status']
+                    && (string) $opcion['sub_status'] === (string) $data['sub_status'];
+            });
 
-        if (! $combinacionValida) {
-            return back()->withErrors([
-                'sub_status' => 'La combinacion de status y sub status no es valida para este modulo.',
-            ])->withInput();
+            if (! $combinacionValida) {
+                return back()->withErrors([
+                    'sub_status' => 'La combinacion de status y sub status no es valida para este modulo.',
+                ])->withInput();
+            }
         }
 
         if (
+            ! $editandoHistorial
+            &&
             $modulo === 'radicados'
             && (string) $data['status'] === 'En Estudio'
             && (string) $data['sub_status'] === 'En Comite'
@@ -670,10 +792,67 @@ class GestionClienteController extends Controller
         $mesaSoporte3 = $this->storeSupportFile($request, 'mesa_soporte_3', 'soportes_mesa_control')
             ?? $cliente->mesa_soporte_3;
 
+        $resolverTextoOpcional = static function (?string $nuevoValor, ?string $valorActual): ?string {
+            $nuevoValor = trim((string) $nuevoValor);
+
+            return $nuevoValor !== '' ? $nuevoValor : $valorActual;
+        };
+
+        if ($editandoHistorial) {
+            $notificacion = ClienteNotificacion::where('id', $data['edit_notificacion_id'])
+                ->where('cliente_id', $cliente->id)
+                ->first();
+
+            if (! $notificacion) {
+                return back()->withErrors([
+                    'edit_notificacion_id' => 'No se encontro la fila de historial seleccionada.',
+                ])->withInput();
+            }
+
+            $notificacion->update([
+                'new_status' => $data['status'],
+                'new_sub_status' => $data['sub_status'],
+                'actor_user_id' => $request->user()?->id,
+            ]);
+
+            $ultimaNotificacion = ClienteNotificacion::where('cliente_id', $cliente->id)
+                ->latest('created_at')
+                ->first();
+
+            if ($ultimaNotificacion && (int) $ultimaNotificacion->id === (int) $notificacion->id) {
+                $cliente->update([
+                    'status' => $data['status'],
+                    'sub_status' => $data['sub_status'],
+                    'observacion_mesa_control' => $data['observacion_mesa_control'],
+                    'tasa_ea' => $resolverTextoOpcional($data['tasa_ea'] ?? null, $cliente->tasa_ea),
+                    'numero_credito' => $resolverTextoOpcional($data['numero_credito'] ?? null, $cliente->numero_credito),
+                    'oficina_radicacion' => $resolverTextoOpcional($data['oficina_radicacion'] ?? null, $cliente->oficina_radicacion),
+                    'financiera_1' => $resolverTextoOpcional($data['financiera_1'] ?? null, $cliente->financiera_1),
+                    'financiera_2' => $resolverTextoOpcional($data['financiera_2'] ?? null, $cliente->financiera_2),
+                    'financiera_3' => $resolverTextoOpcional($data['financiera_3'] ?? null, $cliente->financiera_3),
+                    'mesa_control_user_id' => $request->user()?->id,
+                    'mesa_control_respondido_at' => now(),
+                    'mesa_soporte_1' => $mesaSoporte1,
+                    'mesa_soporte_2' => $mesaSoporte2,
+                    'mesa_soporte_3' => $mesaSoporte3,
+                ]);
+            }
+
+            return redirect()
+                ->route($moduloContext['procesoRoute'] ?? 'filtros.proceso', $cliente->id)
+                ->with('success', 'Fila del historial actualizada correctamente.');
+        }
+
         $cliente->update([
             'status' => $data['status'],
             'sub_status' => $data['sub_status'],
             'observacion_mesa_control' => $data['observacion_mesa_control'],
+            'tasa_ea' => $resolverTextoOpcional($data['tasa_ea'] ?? null, $cliente->tasa_ea),
+            'numero_credito' => $resolverTextoOpcional($data['numero_credito'] ?? null, $cliente->numero_credito),
+            'oficina_radicacion' => $resolverTextoOpcional($data['oficina_radicacion'] ?? null, $cliente->oficina_radicacion),
+            'financiera_1' => $resolverTextoOpcional($data['financiera_1'] ?? null, $cliente->financiera_1),
+            'financiera_2' => $resolverTextoOpcional($data['financiera_2'] ?? null, $cliente->financiera_2),
+            'financiera_3' => $resolverTextoOpcional($data['financiera_3'] ?? null, $cliente->financiera_3),
             'mesa_control_user_id' => $request->user()?->id,
             'mesa_control_respondido_at' => now(),
             'mesa_soporte_1' => $mesaSoporte1,
@@ -782,7 +961,7 @@ class GestionClienteController extends Controller
     public function asignarAsesor(Request $request, string $id)
 {
     // Solo supervisores pueden asignar
-    if (! $request->user()?->isSupervisor()) {
+    if (! $request->user()?->isSupervisorOrAdmin()) {
         abort(403, 'Solo supervisores pueden reasignar filtros.');
     }
 
@@ -801,7 +980,7 @@ class GestionClienteController extends Controller
 public function desasignarAsesor(Request $request, string $id)
 {
     // Solo supervisores pueden desasignar
-    if (! $request->user()?->isSupervisor()) {
+    if (! $request->user()?->isSupervisorOrAdmin()) {
         abort(403, 'Solo supervisores pueden quitar la asignación de un filtro.');
     }
 

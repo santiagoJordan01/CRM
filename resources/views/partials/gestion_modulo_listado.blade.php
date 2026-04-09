@@ -7,6 +7,48 @@
         'showRoute' => 'filtros.show',
         'procesoRoute' => 'filtros.proceso',
     ];
+
+    $opcionesCampania = collect($registros)->pluck('campania')->filter()->unique()->sort()->values();
+    $opcionesProducto = collect($registros)->pluck('producto')->filter()->unique()->sort()->values();
+    $opcionesCanal = collect($registros)->pluck('canal')->filter()->unique()->sort()->values();
+
+    $estadoOpciones = collect(array_merge(
+        $moduloContext['opcionesEstado'] ?? [],
+        $moduloContext['opcionesEstadoAsesor'] ?? []
+    ))
+        ->map(function (array $item): array {
+            return [
+                'status' => (string) ($item['status'] ?? ''),
+                'sub_status' => (string) ($item['sub_status'] ?? ''),
+            ];
+        })
+        ->filter(fn (array $item): bool => $item['status'] !== '' || $item['sub_status'] !== '')
+        ->unique(fn (array $item): string => $item['status'] . '|' . $item['sub_status'])
+        ->values();
+
+    $opcionesStatus = $estadoOpciones->pluck('status')->filter()->unique()->sort()->values();
+    $mapaSubStatusPorStatus = $estadoOpciones
+        ->groupBy('status')
+        ->map(fn ($items) => $items->pluck('sub_status')->filter()->unique()->sort()->values())
+        ->toArray();
+    $opcionesSubStatusTodas = $estadoOpciones->pluck('sub_status')->filter()->unique()->sort()->values();
+
+    $statusSeleccionado = request('status');
+    $subStatusSeleccionado = request('sub_status');
+    $opcionesSubStatus = $statusSeleccionado
+        ? collect($mapaSubStatusPorStatus[$statusSeleccionado] ?? [])->values()
+        : $opcionesSubStatusTodas;
+
+    $tieneFiltrosActivos = collect([
+        request('campania'),
+        request('producto'),
+        request('canal'),
+        request('fecha_desde'),
+        request('fecha_hasta'),
+        request('status'),
+        request('sub_status'),
+        request('q'),
+    ])->contains(fn ($value) => filled($value));
 @endphp
 
 <section class="gf-view">
@@ -27,6 +69,108 @@
 
         <div class="gf-actions">
             <button type="button" class="gf-btn-main">Ver Busquedas</button>
+        </div>
+
+        <div
+            class="gf-search-shell {{ $tieneFiltrosActivos ? 'is-open' : '' }}"
+            id="gf-search-shell"
+            data-sub-status-map='@json($mapaSubStatusPorStatus)'
+            data-all-sub-status='@json($opcionesSubStatusTodas->values())'
+        >
+            <div class="gf-search-grid">
+                <form method="GET" action="{{ route($moduloContext['indexRoute'] ?? 'filtros.index') }}" class="gf-search-box gf-search-advanced">
+                    @if(request()->filled('q'))
+                        <input type="hidden" name="q" value="{{ request('q') }}">
+                    @endif
+
+                    <h3>Busqueda Avanzada</h3>
+
+                    <div class="gf-search-fields">
+                        <div class="gf-field">
+                            <label for="gf-campania">Banco</label>
+                            <select id="gf-campania" name="campania">
+                                <option value="">- Seleccione -</option>
+                                @foreach($opcionesCampania as $campania)
+                                    <option value="{{ $campania }}" {{ request('campania') === $campania ? 'selected' : '' }}>{{ $campania }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="gf-field">
+                            <label for="gf-producto">Producto</label>
+                            <select id="gf-producto" name="producto">
+                                <option value="">- Seleccione -</option>
+                                @foreach($opcionesProducto as $producto)
+                                    <option value="{{ $producto }}" {{ request('producto') === $producto ? 'selected' : '' }}>{{ $producto }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="gf-field">
+                            <label for="gf-canal">Canal</label>
+                            <select id="gf-canal" name="canal">
+                                <option value="">- Seleccione -</option>
+                                @foreach($opcionesCanal as $canal)
+                                    <option value="{{ $canal }}" {{ request('canal') === $canal ? 'selected' : '' }}>{{ $canal }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="gf-field gf-field-date-range">
+                            <label>Fecha</label>
+                            <div class="gf-date-range">
+                                <input type="date" name="fecha_desde" value="{{ request('fecha_desde') }}" aria-label="Fecha desde">
+                                <input type="date" name="fecha_hasta" value="{{ request('fecha_hasta') }}" aria-label="Fecha hasta">
+                            </div>
+                        </div>
+
+                        <div class="gf-field">
+                            <label for="gf-status-select">Status</label>
+                            <select id="gf-status-select" name="status">
+                                <option value="">- Seleccione -</option>
+                                @foreach($opcionesStatus as $status)
+                                    <option value="{{ $status }}" {{ $statusSeleccionado === $status ? 'selected' : '' }}>{{ $status }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="gf-field">
+                            <label for="gf-sub-status-select">Sub status</label>
+                            <select id="gf-sub-status-select" name="sub_status">
+                                <option value="">- Seleccione -</option>
+                                @foreach($opcionesSubStatus as $subStatus)
+                                    <option value="{{ $subStatus }}" {{ $subStatusSeleccionado === $subStatus ? 'selected' : '' }}>{{ $subStatus }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="gf-search-actions">
+                        <button type="submit" class="gf-btn-main gf-btn-main-small">Buscar</button>
+                        <a href="{{ route($moduloContext['indexRoute'] ?? 'filtros.index') }}" class="gf-btn-clear">Limpiar</a>
+                    </div>
+                </form>
+
+                <form method="GET" action="{{ route($moduloContext['indexRoute'] ?? 'filtros.index') }}" class="gf-search-box gf-search-general">
+                    <input type="hidden" name="campania" value="{{ request('campania') }}">
+                    <input type="hidden" name="producto" value="{{ request('producto') }}">
+                    <input type="hidden" name="canal" value="{{ request('canal') }}">
+                    <input type="hidden" name="fecha_desde" value="{{ request('fecha_desde') }}">
+                    <input type="hidden" name="fecha_hasta" value="{{ request('fecha_hasta') }}">
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                    <input type="hidden" name="sub_status" value="{{ request('sub_status') }}">
+
+                    <h3>Busqueda General</h3>
+                    <div class="gf-field">
+                        <label for="gf-q" class="sr-only">Termino de busqueda</label>
+                        <input id="gf-q" type="text" name="q" value="{{ request('q') }}" placeholder="Nombre, cedula, empresa, id...">
+                    </div>
+
+                    <div class="gf-search-actions">
+                        <button type="submit" class="gf-btn-main gf-btn-main-small">Buscar</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <div class="gf-summary">
@@ -204,6 +348,122 @@
         box-shadow: 0 6px 14px rgba(29, 123, 185, 0.25);
     }
 
+    .gf-search-shell {
+        margin-bottom: 1rem;
+        display: none;
+    }
+
+    .gf-search-shell.is-open {
+        display: block;
+    }
+
+    .gf-search-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 0.9rem;
+    }
+
+    .gf-search-box {
+        border: 1px solid #d8e0ec;
+        background: #f2f4f7;
+        border-radius: 7px;
+        padding: 0.8rem;
+    }
+
+    .gf-search-box h3 {
+        margin: 0 0 0.6rem;
+        font-size: 1.65rem;
+        color: #2f435d;
+        font-weight: 700;
+    }
+
+    .gf-search-fields {
+        display: grid;
+        gap: 0.55rem 0.7rem;
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+    }
+
+    .gf-field {
+        display: grid;
+        gap: 0.25rem;
+    }
+
+    .gf-field label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #4b617d;
+    }
+
+    .gf-field input,
+    .gf-field select {
+        height: 32px;
+        border: 1px solid #d5dde9;
+        border-radius: 3px;
+        background: #fff;
+        color: #324b68;
+        padding: 0 0.5rem;
+        font-size: 0.82rem;
+    }
+
+    .gf-field-date-range {
+        grid-column: span 2;
+    }
+
+    .gf-date-range {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.45rem;
+    }
+
+    .gf-search-actions {
+        margin-top: 0.7rem;
+        display: flex;
+        gap: 0.55rem;
+        align-items: center;
+    }
+
+    .gf-btn-main.gf-btn-main-small {
+        font-size: 0.96rem;
+        padding: 0.4rem 0.9rem;
+        border-radius: 5px;
+        min-width: 90px;
+    }
+
+    .gf-btn-clear {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+        border: 1px solid #ced8e6;
+        border-radius: 5px;
+        background: #fff;
+        color: #2f4868;
+        text-decoration: none;
+        font-size: 0.82rem;
+        padding: 0 0.7rem;
+        font-weight: 600;
+    }
+
+    .gf-search-general .gf-field {
+        margin-top: 0.35rem;
+    }
+
+    .gf-search-general .gf-field input {
+        width: 100%;
+    }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
     .gf-summary {
         border: 1px solid #d2e0f2;
         background: #e7f1ff;
@@ -344,5 +604,79 @@
             width: 100%;
             font-size: 1rem;
         }
+
+        .gf-search-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .gf-search-fields {
+            grid-template-columns: repeat(2, minmax(120px, 1fr));
+        }
+
+        .gf-field-date-range {
+            grid-column: auto;
+        }
     }
 </style>
+
+<script>
+    (function () {
+        const btnMain = document.querySelector('.gf-btn-main');
+        const searchShell = document.getElementById('gf-search-shell');
+        const statusSelect = document.getElementById('gf-status-select');
+        const subStatusSelect = document.getElementById('gf-sub-status-select');
+        const subStatusByStatus = JSON.parse(searchShell?.dataset.subStatusMap || '{}');
+        const allSubStatus = JSON.parse(searchShell?.dataset.allSubStatus || '[]');
+
+        function setMainLabel() {
+            if (!btnMain || !searchShell) {
+                return;
+            }
+
+            btnMain.textContent = searchShell.classList.contains('is-open')
+                ? 'Ocultar Busquedas'
+                : 'Ver Busquedas';
+        }
+
+        function renderSubStatusOptions() {
+            if (!statusSelect || !subStatusSelect) {
+                return;
+            }
+
+            const selectedStatus = statusSelect.value || '';
+            const selectedSubStatus = subStatusSelect.value || '';
+            const options = selectedStatus !== ''
+                ? (subStatusByStatus[selectedStatus] || [])
+                : allSubStatus;
+
+            subStatusSelect.innerHTML = '<option value="">- Seleccione -</option>';
+
+            options.forEach(function (value) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                if (selectedSubStatus === value) {
+                    option.selected = true;
+                }
+                subStatusSelect.appendChild(option);
+            });
+        }
+
+        if (btnMain && searchShell) {
+            setMainLabel();
+            btnMain.addEventListener('click', function () {
+                searchShell.classList.toggle('is-open');
+                setMainLabel();
+            });
+        }
+
+        if (statusSelect && subStatusSelect) {
+            statusSelect.addEventListener('change', function () {
+                subStatusSelect.value = '';
+                renderSubStatusOptions();
+            });
+
+            renderSubStatusOptions();
+        }
+    })();
+</script>

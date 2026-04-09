@@ -92,6 +92,21 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
             {{ $registro['observacion_mesa_control'] ?: 'Pendiente respuesta de Mesa de Control.' }}
         </div>
 
+        <div class="gfd-metric-grid">
+            <div class="gfd-metric-box"><strong>Tasa EA:</strong> {{ $registro['tasa_ea'] ?: '-' }}</div>
+            <div class="gfd-metric-box"><strong>Numero de credito:</strong> {{ $registro['numero_credito'] ?: '-' }}</div>
+            <div class="gfd-metric-box"><strong>Oficina de radicacion:</strong> {{ $registro['oficina_radicacion'] ?: '-' }}</div>
+            <div class="gfd-metric-box"><strong>Monto:</strong> {{ $registro['monto'] ?: '-' }}</div>
+            <div class="gfd-metric-box"><strong>Plazo:</strong> {{ $registro['plazo'] ?: '-' }}</div>
+            <div class="gfd-metric-box"><strong>Resultado fecha:</strong> {{ $registro['resultado_fecha'] ?: '-' }}</div>
+        </div>
+
+        <div class="gfd-metric-grid gfd-metric-grid-financieras">
+            <div class="gfd-metric-box"><strong>Financiera 1:</strong> {{ $registro['financiera_1'] ?: '-' }}</div>
+            <div class="gfd-metric-box"><strong>Financiera 2:</strong> {{ $registro['financiera_2'] ?: '-' }}</div>
+            <div class="gfd-metric-box"><strong>Financiera 3:</strong> {{ $registro['financiera_3'] ?: '-' }}</div>
+        </div>
+
         <div class="gfd-financieras">
 
             <div class="fin-card support-full">
@@ -128,6 +143,41 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
                     @endforeach
                 </div>
             </div>
+        </div>
+    </article>
+
+    <article class="gfd-general-card">
+        <h3>Informacion General:</h3>
+        <div class="gfd-general-grid">
+            <div class="gfd-general-item"><span>Banco:</span> {{ $registro['banco'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Producto:</span> {{ $registro['producto'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Destino:</span> {{ $registro['destino'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Cedula:</span> {{ $registro['cedula'] ?: '-' }}</div>
+
+            <div class="gfd-general-item"><span>Nombre Completo:</span> {{ $registro['nombre'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Genero:</span> {{ $registro['genero'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Fecha de Nacimiento:</span> {{ $registro['fecha_nacimiento'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Departamento:</span> {{ $registro['departamento'] ?: '-' }}</div>
+
+            <div class="gfd-general-item"><span>Ciudad:</span> {{ $registro['ciudad'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Perfil:</span> {{ $registro['perfil'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Sector:</span> {{ $registro['sector'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Empresa:</span> {{ $registro['empresa'] ?: '-' }}</div>
+
+            <div class="gfd-general-item"><span>Nit Empresa:</span> {{ $registro['nit_empresa'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Vinculacion:</span> {{ $registro['fecha_vinculacion'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Contrato:</span> {{ $registro['tipo_contrato'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Canal:</span> {{ $registro['canal'] ?: '-' }}</div>
+
+            <div class="gfd-general-item"><span>Monto Filtrado:</span> {{ $registro['monto_filtrado'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Plazo:</span> {{ $registro['plazo'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Celular:</span> {{ $registro['celular'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Ingreso Principal:</span> {{ $registro['ingreso_principal'] ?: '-' }}</div>
+
+            <div class="gfd-general-item"><span>Otro Ingreso:</span> {{ $registro['otros_ingresos'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Tipo de Cliente:</span> {{ $registro['tipo_cliente'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Email:</span> {{ $registro['email'] ?: '-' }}</div>
+            <div class="gfd-general-item"><span>Campania:</span> {{ $registro['campania'] ?: '-' }}</div>
         </div>
     </article>
 
@@ -352,6 +402,34 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
         margin-bottom: 0.9rem;
     }
 
+    .gfd-metric-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(200px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .gfd-metric-grid-financieras {
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+    }
+
+    .gfd-metric-box {
+        background: #fff;
+        border: 1px solid #d7e7f5;
+        border-radius: 6px;
+        padding: 0.75rem;
+        color: #355679;
+        font-size: 0.9rem;
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .gfd-metric-box strong {
+        color: #2b4f76;
+    }
+
     .gfd-financieras {
         display: grid;
         grid-template-columns: repeat(2, minmax(220px, 1fr));
@@ -451,6 +529,45 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
         padding: 0.9rem;
     }
 
+    .gfd-general-card {
+        margin-top: 1rem;
+        border: 1px solid #d9e5f1;
+        border-radius: 9px;
+        background: #fff;
+        padding: 0.9rem;
+    }
+
+    .gfd-general-card h3 {
+        margin: 0 0 0.75rem;
+        color: #2f4f74;
+        font-size: 1rem;
+        border-bottom: 1px solid #e4ecf5;
+        padding-bottom: 0.5rem;
+    }
+
+    .gfd-general-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .gfd-general-item {
+        background: #f8fafc;
+        border: 1px solid #e7edf4;
+        border-radius: 6px;
+        min-height: 56px;
+        padding: 0.65rem 0.7rem;
+        color: #334a66;
+        font-size: 0.9rem;
+        line-height: 1.3;
+    }
+
+    .gfd-general-item span {
+        color: #2b6e9c;
+        font-weight: 700;
+        margin-right: 0.2rem;
+    }
+
     .gfd-response-card h3 {
         margin: 0 0 0.8rem;
         color: #2b4465;
@@ -535,7 +652,16 @@ $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->
             grid-template-columns: 1fr;
         }
 
+        .gfd-metric-grid,
+        .gfd-metric-grid-financieras {
+            grid-template-columns: 1fr;
+        }
+
         .gfd-financieras {
+            grid-template-columns: 1fr;
+        }
+
+        .gfd-general-grid {
             grid-template-columns: 1fr;
         }
 
