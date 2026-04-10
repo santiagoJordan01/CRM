@@ -206,6 +206,23 @@
             font-weight: 700;
             margin-top: 34px;
         }
+           .logo-container {
+    width: 100%;       /* Ocupa el ancho de la sidebar */
+    height: 80px;      /* Ajusta esta altura según te guste */
+    overflow: hidden;  /* Esto "corta" lo que sobre al agrandar la imagen */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-container img {
+    width: 100%;
+    height: auto;
+    /* EL TRUCO: Aumenta el scale para eliminar el espacio vacío de los lados */
+    /* 1.5 es un ejemplo, súbelo a 1.8 o 2.0 si todavía sobra mucho aire */
+    transform: scale(0.97); 
+    object-fit: contain;
+}
 
         @media (max-width: 1200px) {
             .left-panel {
@@ -282,7 +299,11 @@
             <div>
                 <div class="logo">
                     <!-- <span class="logo-mark" aria-hidden="true"></span> -->
-                    <span>KC</span>
+                    <div class="brand">
+                        <div class="logo-container">
+                            <img src="{{ asset('img/LOGO_CALAMBAS_MARTINEZ.png') }}" alt="Logo Calambas Martinez">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="section-title">
@@ -295,11 +316,11 @@
                 </div>
 
                 @if (session('error'))
-                    <div class="error-box">{{ session('error') }}</div>
+                <div class="error-box">{{ session('error') }}</div>
                 @endif
 
                 @if ($errors->any())
-                    <div class="error-box">{{ $errors->first() }}</div>
+                <div class="error-box">{{ $errors->first() }}</div>
                 @endif
 
                 <form method="POST" action="{{ route('login.store') }}" autocomplete="off">

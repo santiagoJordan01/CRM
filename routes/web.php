@@ -2,16 +2,18 @@
 
 use App\Http\Controllers\GestionClienteController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InformesController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\RegistroClienteController;
+use App\Http\Controllers\WebLeadController;
 use App\Http\Controllers\AjustesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/', [WebLeadController::class, 'landing'])->name('landing');
+
+Route::post('/web-leads', [WebLeadController::class, 'store'])->name('web-leads.store');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', function () {
@@ -62,6 +64,18 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/gestion-filtros', [GestionClienteController::class, 'filtrosIndex'])->name('filtros.index');
+    Route::get('/informes/filtros/excel', [InformesController::class, 'exportarExcel'])
+        ->name('informes.filtros.excel')
+        ->middleware('role:supervisor,admin');
+    Route::get('/informes/filtros/pdf', [InformesController::class, 'vistaPdf'])
+        ->name('informes.filtros.pdf')
+        ->middleware('role:supervisor,admin');
+    Route::get('/mesa-control/leads', [WebLeadController::class, 'index'])
+        ->name('web-leads.index')
+        ->middleware('role:supervisor,admin');
+    Route::post('/mesa-control/leads/{lead}/convertir', [WebLeadController::class, 'convertir'])
+        ->name('web-leads.convertir')
+        ->middleware('role:supervisor,admin');
     Route::get('/gestion-filtros/{id}/proceso', [GestionClienteController::class, 'filtrosProceso'])->name('filtros.proceso');
     Route::get('/gestion-filtros/{id}', [GestionClienteController::class, 'filtrosShow'])->name('filtros.show');
     Route::get('/proceso/{id}', [GestionClienteController::class, 'procesoIndex'])->name('proceso.index');

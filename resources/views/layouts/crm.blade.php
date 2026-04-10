@@ -146,6 +146,36 @@
             color: var(--muted);
         }
 
+        .logo-container {
+    width: 100%;       /* Ocupa el ancho de la sidebar */
+    height: 80px;      /* Ajusta esta altura según te guste */
+    overflow: hidden;  /* Esto "corta" lo que sobre al agrandar la imagen */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-container img {
+    width: 100%;
+    height: auto;
+    /* EL TRUCO: Aumenta el scale para eliminar el espacio vacío de los lados */
+    /* 1.5 es un ejemplo, súbelo a 1.8 o 2.0 si todavía sobra mucho aire */
+    transform: scale(1.25); 
+    object-fit: contain;
+}
+
+        .logo-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            border-radius: 8px;
+        }
+
+        .logo-link:focus {
+            outline: 3px solid rgba(31,141,214,0.14);
+            outline-offset: 2px;
+        }
+
         @media (max-width: 980px) {
             .sidebar {
                 width: 100%;
@@ -176,20 +206,31 @@
 </head>
 
 <body>
+    @php
+        $rolSidebar = auth()->user()->role ?? 'asesor';
+        $puedeVerLeadsWeb = in_array($rolSidebar, ['supervisor', 'admin'], true);
+    @endphp
     <aside class="sidebar">
         <div class="sidebar-top">
             <div class="brand">
-                CRM
+                <a href="{{ route('home') }}" class="logo-link" aria-label="Ir a Inicio" title="Ir a Inicio">
+                    <div class="logo-container">
+                        <img src="{{ asset('img/LOGO_CALAMBAS_MARTINEZ.png') }}" alt="Logo Calambas Martinez">
+                    </div>
+                </a>
                 <small>Panel principal</small>
             </div>
-
-    
 
 
             <nav class="nav-links">
                 <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
                     <i class="fas fa-home"></i> Inicio
                 </a>
+                @if($puedeVerLeadsWeb)
+                    <a href="{{ route('web-leads.index') }}" class="nav-link {{ request()->routeIs('web-leads.*') ? 'active' : '' }}">
+                        <i class="fas fa-bullhorn"></i> Leads web
+                    </a>
+                @endif
                 <a href="{{ route('filtros.index') }}" class="nav-link {{ request()->routeIs('filtros.*') ? 'active' : '' }}">
                     <i class="fas fa-filter"></i> Gestion filtros
                 </a>

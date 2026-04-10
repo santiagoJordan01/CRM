@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use App\Models\ClienteNotificacion;
+use App\Support\ClienteModuloContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class HomeController extends Controller
 {
@@ -60,6 +63,27 @@ class HomeController extends Controller
             ->pluck('total', 'fecha')
             ->toArray();
 
+        $informeFiltros = [
+            'campania' => trim((string) $request->input('campania', '')),
+            'producto' => trim((string) $request->input('producto', '')),
+            'canal' => trim((string) $request->input('canal', '')),
+            'fecha' => trim((string) $request->input('fecha', '')),
+            'fecha_desde' => trim((string) $request->input('fecha_desde', '')),
+            'fecha_hasta' => trim((string) $request->input('fecha_hasta', '')),
+        ];
+
+        // Solo permitir mostrar el informe si el usuario es supervisor o admin
+        $mostrarInforme = $request->boolean('buscar_informe') && $request->user()?->isSupervisorOrAdmin();
+        $informeRegistros = collect();
+
+        if ($mostrarInforme) {
+            $informeRegistros = $this->construirQueryInforme($request)
+                ->with(['user'])
+                ->latest()
+                ->limit(30)
+                ->get();
+        }
+
         return view('home', compact(
             'bancos',
             'productos',
@@ -67,7 +91,62 @@ class HomeController extends Controller
             'recordatorios',
             'notificaciones',
             'notificacionesNoLeidas',
-            'calendarEvents'
+            'calendarEvents',
+            'informeFiltros',
+            'informeRegistros',
+            'mostrarInforme'
         ));
+    }
+
+    private function construirQueryInforme(Request $request): Builder
+    {
+        $query = Cliente::query();
+
+        if ($request->user()?->isAsesor()) {
+            $query->where('user_id', $request->user()->id);
+        }
+
+        if ($request->filled('campania')) {
+            $query->where('campania', $request->string('campania')->toString());
+        }
+
+        if ($request->filled('producto')) {
+            $query->where('producto', $request->string('producto')->toString());
+        }
+
+        if ($request->filled('canal')) {
+            $query->where('canal', $request->string('canal')->toString());
+        }
+
+        if ($request->filled('fecha')) {
+            try {
+                $fecha = Carbon::parse($request->string('fecha')->toString())->toDateString();
+                $query->whereDate('created_at', $fecha);
+            } catch (\Throwable $e) {
+                // Ignore invalid date value.
+            }
+        } else {
+            if ($request->filled('fecha_desde')) {
+                try {
+                    $fechaDesde = Carbon::parse($request->string('fecha_desde')->toString())->toDateString();
+                    $query->whereDate('created_at', '>=', $fechaDesde);
+                } catch (\Throwable $e) {
+                    // Ignore invalid date value.
+                }
+            }
+
+            if ($request->filled('fecha_hasta')) {
+                try {
+                    $fechaHasta = Carbon::parse($request->string('fecha_hasta')->toString())->toDateString();
+                    $query->whereDate('created_at', '<=', $fechaHasta);
+                } catch (\Throwable $e) {
+                    // Ignore invalid date value.
+                }
+            }
+        }
+
+        ClienteModuloContext::applyFilter($query, 'filtros');
+
+        return $query;
     }
 }

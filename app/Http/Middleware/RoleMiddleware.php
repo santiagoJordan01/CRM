@@ -12,7 +12,16 @@ class RoleMiddleware
     {
         $user = $request->user();
 
-        if (! $user || ! in_array($user->role, $roles, true)) {
+        // Allow admin to bypass role checks (superuser)
+        if (! $user) {
+            abort(403, 'No tienes permisos para realizar esta accion.');
+        }
+
+        if ($user->role === 'admin') {
+            return $next($request);
+        }
+
+        if (! in_array($user->role, $roles, true)) {
             abort(403, 'No tienes permisos para realizar esta accion.');
         }
 
