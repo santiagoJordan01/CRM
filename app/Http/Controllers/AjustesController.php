@@ -12,6 +12,11 @@ class AjustesController extends Controller
     private const SUPERUSER_EMAIL = 'supervisor@gmail.com';
     private array $roles = ['asesor', 'supervisor', 'admin'];
 
+    public function __construct()
+    {
+        $this->middleware('role:admin');
+    }
+
     public function index()
     {
         $current = auth()->user();

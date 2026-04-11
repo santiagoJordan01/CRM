@@ -108,7 +108,9 @@
                             @if($puedeCrearFiltro)
                                 <a href="{{ route('registros') }}" class="mini-link">Crear nuevo filtro</a>
                             @endif
-                            <a href="{{ route('ajustes.index') }}" class="mini-link">Ajustes</a>
+                            @if(auth()->user()?->isAdmin())
+                                <a href="{{ route('ajustes.index') }}" class="mini-link">Ajustes</a>
+                            @endif
                         </div>
 
                         <form method="POST" action="{{ route('logout') }}" class="profile-logout-form">

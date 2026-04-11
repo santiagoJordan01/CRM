@@ -41,7 +41,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
     Route::get('/notificaciones/{id}/abrir', [NotificacionController::class, 'abrir'])->name('notifications.open');
-    Route::get('/ajustes', [AjustesController::class, 'index'])->name('ajustes.index');
+    Route::get('/ajustes', [AjustesController::class, 'index'])
+        ->name('ajustes.index')
+        ->middleware('role:admin');
     Route::post('/ajustes/users', [AjustesController::class, 'storeUser'])
         ->name('ajustes.users.store')
         ->middleware('role:admin');
