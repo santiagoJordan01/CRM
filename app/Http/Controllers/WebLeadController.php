@@ -74,7 +74,7 @@ class WebLeadController extends Controller
             'cedula' => 'nullable|string|max:30',
             'email' => 'required|email|max:255',
             'celular_cliente' => 'required|string|max:20',
-            'campania' => 'required|string|max:255',
+            'campania' => 'nullable|string|max:255',
             'producto' => 'required|string|max:255',
             'canal' => 'nullable|string|max:100',
             'genero' => 'nullable|string|max:50',
@@ -85,6 +85,11 @@ class WebLeadController extends Controller
             'ingreso_referido' => 'nullable|string|max:30',
             'observaciones' => 'nullable|string|max:2000',
         ]);
+
+        // Si no se indicó campaña en el formulario, asignar un valor por defecto
+        if (empty($data['campania'])) {
+            $data['campania'] = 'Por definir';
+        }
 
         WebLead::create($data + [
             'status' => 'pendiente',
@@ -139,7 +144,7 @@ class WebLeadController extends Controller
         $cliente = Cliente::create([
             'user_id' => null,
             'mesa_control_user_id' => $request->user()?->id,
-            'campania' => $lead->campania,
+            'campania' => $lead->campania ?: 'Por definir',
             'producto' => $lead->producto,
             'cedula' => $lead->cedula ?: 'PENDIENTE',
             'genero' => $lead->genero ?: 'No definido',

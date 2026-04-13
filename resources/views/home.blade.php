@@ -8,7 +8,11 @@
         $rolUsuario = auth()->user()->role ?? 'asesor';
         $puedeCrearFiltro = in_array($rolUsuario, ['asesor', 'supervisor', 'admin'], true);
         $puedeVerInformes = in_array($rolUsuario, ['supervisor', 'admin'], true);
-        $nombreRol = $rolUsuario === 'supervisor' ? 'Mesa de Control' : 'Asesor';
+        $nombreRol = match ($rolUsuario) {
+            'admin' => 'Administrador',
+            'supervisor' => 'Mesa de Control',
+            default => 'Asesor',
+        };
         $notificaciones = $notificaciones ?? collect();
         $notificacionesNoLeidas = (int) ($notificacionesNoLeidas ?? 0);
         $notificacionesPendientes = $notificaciones->filter(fn ($n) => empty($n->read_at));

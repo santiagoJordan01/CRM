@@ -19,9 +19,8 @@
 
 @section('content')
 @php
-$rolUsuario = auth()->user()->role ?? 'asesor';
-$esSupervisor = $rolUsuario === 'supervisor';
-$subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->values();
+    $esSupervisor = auth()->user()?->isSupervisorOrAdmin() === true;
+    $subEstadosRespuesta = collect($opcionesEstado)->pluck('sub_status')->unique()->values();
 @endphp
 
 <section class="gfd-view">

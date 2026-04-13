@@ -487,7 +487,7 @@
                         <label>Correo electrónico *</label>
                         <input type="email" name="email" value="{{ old('email') }}" required>
                     </div>
-                    <div class="field">
+                    <!-- <div class="field">
                         <label>Entidad financiera *</label>
                         <select name="campania" required>
                             <option value="">Seleccione...</option>
@@ -495,7 +495,7 @@
                                 <option value="{{ $banco }}" {{ old('campania') === $banco ? 'selected' : '' }}>{{ $banco }}</option>
                             @endforeach
                         </select>
-                    </div>
+                    </div> -->
                     <div class="field">
                         <label>Tipo de crédito *</label>
                         <select name="producto" required>
